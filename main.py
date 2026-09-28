@@ -1,6 +1,4 @@
-from pathlib import Path
-
-main_py = r'''import streamlit as st
+import streamlit as st
 from google import genai
 import re
 
@@ -350,13 +348,3 @@ else:
     with col3:
         st.markdown("**③ 프레임 비교**")
         st.write("각 기사가 어떤 내용과 관점을 중심으로 다루는지 비교합니다.")
-'''
-
-requirements_txt = """streamlit
-google-genai
-"""
-
-Path("/mnt/data/main.py").write_text(main_py, encoding="utf-8")
-Path("/mnt/data/requirements.txt").write_text(requirements_txt, encoding="utf-8")
-print("created")
-
