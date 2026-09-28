@@ -1,2 +1,2 @@
-plotly
-requests
+streamlit
+google-genai>=1.38.0
