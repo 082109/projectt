@@ -16,86 +16,105 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# 2. 커스텀 CSS 스타일링 (다크 네이비 테마 & 뉴스 앱 UI)
+# 2. 커스텀 CSS 스타일링 (극강의 딥 다크 모드)
 # ---------------------------------------------------------
 st.markdown("""
 <style>
-    /* 전체 배경색 다크 네이비 적용 */
+    /* 전체 배경을 울트라 딥 다크 컬러로 설정 */
     .stApp {
-        background-color: #0f172a;
-        color: #f8fafc;
+        background-color: #030712;
+        color: #f3f4f6;
     }
     
-    /* 상단 속보 전광판 (Ticker) 스타일 */
+    /* 사이드바 어둡게 */
+    section[data-testid="stSidebar"] {
+        background-color: #0b0f19;
+        border-right: 1px solid #1f2937;
+    }
+
+    /* 상단 속보 전광판 (Ticker) - 딥 블랙 & 글로우 효과 */
     .ticker-wrap {
         width: 100%;
-        background-color: #1e293b;
-        border: 1px solid #334155;
+        background-color: #0b0f19;
+        border: 1px solid #1f2937;
         border-radius: 8px;
-        padding: 10px 15px;
-        margin-bottom: 20px;
+        padding: 10px 16px;
+        margin-bottom: 24px;
         display: flex;
         align-items: center;
         gap: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
     }
     .ticker-badge {
-        background-color: #ef4444;
+        background-color: #dc2626;
         color: white;
         padding: 3px 8px;
-        font-weight: bold;
-        font-size: 0.78rem;
+        font-weight: 800;
+        font-size: 0.75rem;
         border-radius: 4px;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.6px;
         animation: pulse 2s infinite;
     }
     .ticker-text {
-        color: #cbd5e1;
-        font-size: 0.9rem;
+        color: #9ca3af;
+        font-size: 0.88rem;
         font-weight: 500;
     }
     
     @keyframes pulse {
         0% { opacity: 1; }
-        50% { opacity: 0.5; }
+        50% { opacity: 0.4; }
         100% { opacity: 1; }
     }
 
-    /* 서브 타이틀 및 헤더 스타일 */
+    /* 타이틀 및 헤더 */
     .main-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #f8fafc;
-        margin-bottom: 2px;
-        letter-spacing: -0.5px;
+        font-size: 2.3rem;
+        font-weight: 900;
+        color: #ffffff;
+        margin-bottom: 4px;
+        letter-spacing: -0.8px;
     }
     .sub-title {
-        color: #94a3b8;
-        font-size: 0.98rem;
-        margin-bottom: 25px;
+        color: #6b7280;
+        font-size: 0.95rem;
+        margin-bottom: 28px;
     }
 
-    /* 검색 영역 카드 스타일 */
-    .search-box-container {
-        background: #1e293b;
-        padding: 20px;
-        border-radius: 12px;
-        border: 1px solid #334155;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        margin-bottom: 25px;
+    /* 입력창 및 폼 카드 다크 스타일링 */
+    div[data-testid="stForm"], .stTextInput > div > div {
+        background-color: #0b0f19 !important;
+        border: 1px solid #1f2937 !important;
+        border-radius: 10px !important;
+        color: #f3f4f6 !important;
     }
 
-    /* 기사 체크박스 카드 스타일 */
-    div[data-testid="stForm"] {
-        background-color: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 20px;
+    /* 버튼 스타일 다크 커스텀 */
+    .stButton > button {
+        background-color: #1f2937;
+        color: #ffffff;
+        border: 1px solid #374151;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .stButton > button:hover {
+        background-color: #374151;
+        border-color: #4b5563;
+        color: #ffffff;
     }
 
     /* 구분선 컬러 수정 */
     hr {
-        border-color: #334155 !important;
+        border-color: #1f2937 !important;
+    }
+
+    /* Expander 아코디언 카드 다크 모드 */
+    .streamlit-expanderHeader {
+        background-color: #0b0f19 !important;
+        border-radius: 8px !important;
+        border: 1px solid #1f2937 !important;
+        color: #e5e7eb !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -106,7 +125,7 @@ st.markdown("""
 st.markdown("""
 <div class="ticker-wrap">
     <span class="ticker-badge">LIVE BREAKING</span>
-    <span class="ticker-text">🔴 FrameLens AI 엔진 가동 중 | 실시간 포털 뉴스 보도 프레임 & 편향성 심층 탐지</span>
+    <span class="ticker-text">🔴 FrameLens AI 실시간 탐지 엔진 작동 중 | 미디어 보도 프레임 & 편향성 다각도 투시</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -205,7 +224,7 @@ def analyze_article_with_gemini(title, description, api_key):
         }
 
 # ---------------------------------------------------------
-# 7. 검색 바 (포털 웹앱 스타일)
+# 7. 검색 바 (다크 웹앱 스타일)
 # ---------------------------------------------------------
 search_col1, search_col2 = st.columns([4, 1])
 
@@ -223,7 +242,7 @@ with search_col2:
 # Session State 활용
 if search_btn or 'news_items' not in st.session_state:
     if client_id and client_secret:
-        with st.spinner("최신 관련 뉴스를 수집하는 중..."):
+        with st.spinner("최신 뉴스를 수집하는 중..."):
             st.session_state['news_items'] = fetch_naver_news(search_query)
             st.session_state['last_query'] = search_query
 
@@ -308,19 +327,19 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
                     frame_counts = df['보도 프레임'].value_counts().reset_index()
                     frame_counts.columns = ['보도 프레임', '기사 수']
                     
-                    # Plotly 테마도 다크 테마에 어울리게 세팅
+                    # 어두운 배경에 맞는 차트 커스텀
                     fig_pie = px.pie(
                         frame_counts, 
                         values='기사 수', 
                         names='보도 프레임',
                         title="보도 프레임 점유율",
                         hole=0.4,
-                        color_discrete_sequence=px.colors.qualitative.Pastel
+                        color_discrete_sequence=px.colors.qualitative.Dark24
                     )
                     fig_pie.update_layout(
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
-                        font_color='#f8fafc'
+                        font_color='#f3f4f6'
                     )
                     st.plotly_chart(fig_pie, use_container_width=True)
                 
@@ -341,7 +360,7 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
                 fig_bar.update_layout(
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
-                    font_color='#f8fafc',
+                    font_color='#f3f4f6',
                     xaxis_showticklabels=False
                 )
                 st.plotly_chart(fig_bar, use_container_width=True)
