@@ -3,6 +3,7 @@ import requests
 import json
 import pandas as pd
 import plotly.express as px
+from datetime import datetime
 from google import genai
 
 # ---------------------------------------------------------
@@ -32,6 +33,19 @@ gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip() or st.sidebar.text_inp
 
 if not (client_id and client_secret and gemini_key):
     st.info("💡 사이드바에 API 키를 입력하거나 `.streamlit/secrets.toml`에 설정해주세요.")
+
+# ---------------------------------------------------------
+# 날짜 포맷 변환 함수 (RFC 822 -> YY-MM-DD HH:MM)
+# ---------------------------------------------------------
+def parse_pub_date(pub_date_str):
+    if not pub_date_str:
+        return "날짜 정보 없음"
+    try:
+        # 네이버 API 날짜 형식 (예: Mon, 30 Sep 2026 13:20:00 +0900)
+        dt = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z")
+        return dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return pub_date_str
 
 # ---------------------------------------------------------
 # 3. 네이버 뉴스 API 호출 함수 (최대 30건 수집)
@@ -109,7 +123,7 @@ with search_col1:
     search_query = st.text_input("🔍 분석할 뉴스 주제나 키워드를 입력하세요", value="마약")
 
 with search_col2:
-    st.write("") # 버튼 위치 맞춤용
+    st.write("") 
     st.write("")
     search_btn = st.button("🔎 뉴스 검색", use_container_width=True)
 
@@ -136,13 +150,14 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
             clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
             clean_desc = item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
             link = item.get('originallink', item.get('link', '#'))
+            pub_date = parse_pub_date(item.get('pubDate', ''))
 
             is_selected = st.checkbox(
                 f"**{idx+1}. {clean_title}**",
                 value=select_all,
                 key=f"chk_{idx}"
             )
-            st.caption(f"요약: {clean_desc}")
+            st.caption(f"🗓️ **보도 일시:** {pub_date} | 요약: {clean_desc}")
             st.markdown(f"[🔗 원문 기사 보기]({link})")
             st.markdown("---")
 
@@ -150,7 +165,8 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
                 selected_articles.append({
                     "title": clean_title,
                     "description": clean_desc,
-                    "link": link
+                    "link": link,
+                    "pub_date": pub_date
                 })
 
         submit_analysis = st.form_submit_button("🚀 선택한 기사 AI 분석 시작", use_container_width=True)
@@ -174,6 +190,7 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
                 
                 analyzed_list.append({
                     "제목": article['title'],
+                    "보도 일시": article['pub_date'],
                     "AI 요약": ai_res.get("summary", ""),
                     "보도 프레임": ai_res.get("frame_category", "기타"),
                     "편향성 점수": ai_res.get("bias_score", 0),
@@ -226,9 +243,10 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
             # 상세 결과 출력
             st.subheader("📋 선택 기사 상세 분석 카드")
             for idx, row in df.iterrows():
-                with st.expander(f"[{row['보도 프레임']}] {row['제목']}"):
+                with st.expander(f"[{row['보도 프레임']}] {row['제목']} ({row['보도 일시']})"):
                     col_a, col_b = st.columns([3, 1])
                     with col_a:
+                        st.markdown(f"🗓️ **보도 일시:** `{row['보도 일시']}`")
                         st.markdown(f"**AI 요약:** {row['AI 요약']}")
                         st.markdown(f"**핵심 키워드:** `{row['핵심 키워드']}`")
                     with col_b:
