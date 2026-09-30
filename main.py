@@ -9,19 +9,20 @@ from google import genai
 # 1. 페이지 기본 설정 및 타이틀
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="미디어 프레이밍 & 편향성 분석기",
+    page_title="FrameLens - AI 뉴스 프레임 분석기",
     page_icon="📰",
     layout="wide"
 )
 
-st.title("📰 미디어커뮤니케이션 : 실시간 뉴스 프레이밍 & AI 편향성 분석")
+st.title("📰 FrameLens : AI 기반 뉴스 보도 프레임 & 편향성 분석기")
 st.markdown("""
-이 웹앱은 **네이버 클라우드 API HUB**를 통해 실시간 기사를 수집하고, **Gemini AI API**를 활용해 기사별 **보도 프레임**과 **편향성/어조**를 분석한 뒤 **데이터 저널리즘 차트**로 시각화합니다.
+이 웹앱은 **네이버 클라우드 API HUB**를 통해 관련 뉴스 기사를 실시간으로 가져옵니다.  
+분석하고 싶은 기사를 직접 선택하여 **Gemini AI** 기반의 **보도 프레임 및 편향성 분석**을 진행해 보세요.
 """)
 st.divider()
 
 # ---------------------------------------------------------
-# 2. API 키 불러오기 (secrets.toml 또는 사이드바 입력)
+# 2. API 키 불러오기
 # ---------------------------------------------------------
 st.sidebar.header("🔑 API 설정")
 
@@ -33,24 +34,25 @@ if not (client_id and client_secret and gemini_key):
     st.info("💡 사이드바에 API 키를 입력하거나 `.streamlit/secrets.toml`에 설정해주세요.")
 
 # ---------------------------------------------------------
-# 3. 네이버 클라우드 API HUB 뉴스 호출 함수 (URL 수정 완료)
+# 3. 네이버 뉴스 API 호출 함수 (최대 30건 수집)
 # ---------------------------------------------------------
-def fetch_naver_news(query, display_count=10):
-    # NAVER API HUB 뉴스 검색 정식 URL
+def fetch_naver_news(query, display_count=30):
     url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={query}&display={display_count}&sort=date"
     
-    # NAVER API HUB 전용 헤더
     headers = {
         "X-NCP-APIGW-API-KEY-ID": client_id,
         "X-NCP-APIGW-API-KEY": client_secret
     }
     
-    response = requests.get(url, headers=headers)
-
-    if response.status_code == 200:
-        return response.json().get('items', [])
-    else:
-        st.error(f"네이버 API 호출 실패 (상태 코드: {response.status_code}) - Client ID와 Secret을 다시 확인해 주세요.")
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json().get('items', [])
+        else:
+            st.error(f"네이버 API 호출 실패 (상태 코드: {response.status_code}) - Client ID/Secret을 확인해 주세요.")
+            return []
+    except Exception as e:
+        st.error(f"뉴스 수집 중 오류 발생: {e}")
         return []
 
 # ---------------------------------------------------------
@@ -99,59 +101,95 @@ def analyze_article_with_gemini(title, description, api_key):
         }
 
 # ---------------------------------------------------------
-# 5. 메인 UI 및 검색 실행
+# 5. 검색 및 뉴스 목록 표시
 # ---------------------------------------------------------
-col_input1, col_input2 = st.columns([3, 1])
+search_col1, search_col2 = st.columns([4, 1])
 
-with col_input1:
-    search_query = st.text_input("🔍 분석할 미디어 이슈/키워드를 입력하세요", value="마약")
+with search_col1:
+    search_query = st.text_input("🔍 분석할 뉴스 주제나 키워드를 입력하세요", value="마약")
 
-with col_input2:
-    num_articles = st.selectbox("분석 기사 수", options=[5, 10, 15, 20], index=1)
+with search_col2:
+    st.write("") # 버튼 위치 맞춤용
+    st.write("")
+    search_btn = st.button("🔎 뉴스 검색", use_container_width=True)
 
-start_analysis = st.button("🚀 뉴스 수집 & AI 분석 시작", use_container_width=True)
+# Session State를 활용해 검색 결과 저장
+if search_btn or 'news_items' not in st.session_state:
+    if client_id and client_secret:
+        with st.spinner("최신 관련 뉴스 기사를 검색하는 중..."):
+            st.session_state['news_items'] = fetch_naver_news(search_query)
+            st.session_state['last_query'] = search_query
 
-if start_analysis:
-    if not (client_id and client_secret and gemini_key):
-        st.error("❌ Naver Client ID, Naver Client Secret, Gemini API 키가 모두 입력되어야 합니다.")
-    else:
-        with st.spinner("네이버 뉴스 데이터 수집 중..."):
-            news_items = fetch_naver_news(search_query, num_articles)
-        
-        if not news_items:
-            st.warning("수집된 데이터가 없습니다. 키워드를 변경하거나 API 키를 확인하세요.")
+# 뉴스 목록 및 선택 체크박스 출력
+if 'news_items' in st.session_state and st.session_state['news_items']:
+    st.subheader(f"📋 '{st.session_state.get('last_query', '')}' 관련 뉴스 목록")
+    st.info("분석하고 싶은 기사의 체크박스를 선택한 후 아래 [선택한 기사 AI 분석 시작] 버튼을 눌러주세요.")
+
+    selected_articles = []
+
+    # 전체 선택 버튼 지원
+    select_all = st.checkbox("전체 기사 선택 / 해제")
+
+    # 기사 목록 출력
+    with st.form("news_selection_form"):
+        for idx, item in enumerate(st.session_state['news_items']):
+            clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+            clean_desc = item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+            link = item.get('originallink', item.get('link', '#'))
+
+            is_selected = st.checkbox(
+                f"**{idx+1}. {clean_title}**",
+                value=select_all,
+                key=f"chk_{idx}"
+            )
+            st.caption(f"요약: {clean_desc}")
+            st.markdown(f"[🔗 원문 기사 보기]({link})")
+            st.markdown("---")
+
+            if is_selected:
+                selected_articles.append({
+                    "title": clean_title,
+                    "description": clean_desc,
+                    "link": link
+                })
+
+        submit_analysis = st.form_submit_button("🚀 선택한 기사 AI 분석 시작", use_container_width=True)
+
+    # ---------------------------------------------------------
+    # 6. 선택한 기사 AI 분석 및 결과 시각화
+    # ---------------------------------------------------------
+    if submit_analysis:
+        if not selected_articles:
+            st.warning("⚠️ 최소 1개 이상의 기사를 선택해 주세요!")
+        elif not gemini_key:
+            st.error("❌ Gemini API 키를 입력해 주세요.")
         else:
-            st.success(f"총 {len(news_items)}개의 최신 기사를 가져왔습니다. Gemini AI 분석 중...")
+            st.success(f"선택한 {len(selected_articles)}개의 기사를 분석 중입니다...")
             
             progress_bar = st.progress(0)
             analyzed_list = []
-            
-            for idx, item in enumerate(news_items):
-                clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
-                clean_desc = item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
-                
-                ai_res = analyze_article_with_gemini(clean_title, clean_desc, gemini_key)
+
+            for idx, article in enumerate(selected_articles):
+                ai_res = analyze_article_with_gemini(article['title'], article['description'], gemini_key)
                 
                 analyzed_list.append({
-                    "제목": clean_title,
+                    "제목": article['title'],
                     "AI 요약": ai_res.get("summary", ""),
                     "보도 프레임": ai_res.get("frame_category", "기타"),
                     "편향성 점수": ai_res.get("bias_score", 0),
                     "핵심 키워드": ", ".join(ai_res.get("key_keywords", [])),
-                    "링크": item.get('originallink', item.get('link', '#'))
+                    "링크": article['link']
                 })
                 
-                progress_bar.progress((idx + 1) / len(news_items))
-            
+                progress_bar.progress((idx + 1) / len(selected_articles))
+
             df = pd.DataFrame(analyzed_list)
             st.toast("AI 분석 완료!", icon="🎉")
 
-            # ---------------------------------------------------------
-            # 6. 데이터 시각화 대시보드
-            # ---------------------------------------------------------
-            st.subheader("📊 미디어 보도 경향 분석 결과")
+            # 대시보드 시각화
+            st.subheader("📊 선택 기사 미디어 보도 경향 분석 결과")
             
-            tab1, tab2 = st.tabs(["보도 프레임 분석", "편향성/어조 분포"])
+            tab1, tab2 = st.tabs(["보도 프레임 분포", "편향성/어조 점수"])
             
             with tab1:
                 col_chart1, col_chart2 = st.columns([1, 1])
@@ -162,15 +200,14 @@ if start_analysis:
                         frame_counts, 
                         values='기사 수', 
                         names='보도 프레임',
-                        title="언론 보도 프레임 점유율",
+                        title="보도 프레임 점유율",
                         hole=0.4,
                         color_discrete_sequence=px.colors.qualitative.Pastel
                     )
                     st.plotly_chart(fig_pie, use_container_width=True)
                 
                 with col_chart2:
-                    st.markdown("#### 💡 프레임 분석 해설")
-                    st.write("언론이 이 주제를 다룰 때 어떤 **프레임(시각)**을 집중적으로 사용하는지 비율로 보여줍니다.")
+                    st.markdown("#### 💡 프레임 집계 요약")
                     st.dataframe(frame_counts, hide_index=True, use_container_width=True)
 
             with tab2:
@@ -186,10 +223,8 @@ if start_analysis:
                 fig_bar.update_layout(xaxis_showticklabels=False)
                 st.plotly_chart(fig_bar, use_container_width=True)
 
-            # ---------------------------------------------------------
-            # 7. 기사 상세 카드 목록
-            # ---------------------------------------------------------
-            st.subheader("📋 기사별 AI 분석 상세")
+            # 상세 결과 출력
+            st.subheader("📋 선택 기사 상세 분석 카드")
             for idx, row in df.iterrows():
                 with st.expander(f"[{row['보도 프레임']}] {row['제목']}"):
                     col_a, col_b = st.columns([3, 1])
@@ -197,5 +232,5 @@ if start_analysis:
                         st.markdown(f"**AI 요약:** {row['AI 요약']}")
                         st.markdown(f"**핵심 키워드:** `{row['핵심 키워드']}`")
                     with col_b:
-                        st.metric("편향성/어조 점수", f"{row['편향성 점수']} / 5")
+                        st.metric("어조/편향성 점수", f"{row['편향성 점수']} / 5")
                         st.markdown(f"[🔗 원문 기사 링크]({row['링크']})")
