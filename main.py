@@ -6,7 +6,7 @@ import plotly.express as px
 from google import genai
 
 # ---------------------------------------------------------
-# 1. 페이지 basic 설정 및 타이틀
+# 1. 페이지 기본 설정 및 타이틀
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="미디어 프레이밍 & 편향성 분석기",
@@ -16,7 +16,7 @@ st.set_page_config(
 
 st.title("📰 미디어커뮤니케이션 : 실시간 뉴스 프레이밍 & AI 편향성 분석")
 st.markdown("""
-이 웹앱은 **네이버 뉴스 API**를 통해 실시간 기사를 수집하고, **Gemini AI API**를 활용해 기사별 **보도 프레임**과 **편향성/어조**를 분석한 뒤 **데이터 저널리즘 차트**로 시각화합니다.
+이 웹앱은 **네이버 클라우드 API HUB**를 통해 실시간 기사를 수집하고, **Gemini AI API**를 활용해 기사별 **보도 프레임**과 **편향성/어조**를 분석한 뒤 **데이터 저널리즘 차트**로 시각화합니다.
 """)
 st.divider()
 
@@ -25,42 +25,46 @@ st.divider()
 # ---------------------------------------------------------
 st.sidebar.header("🔑 API 설정")
 
-# Secrets에서 불러오되, 없을 경우 사이드바 수동 입력 가능하도록 처리
-naver_id = st.secrets.get("NAVER_CLIENT_ID", "") or st.sidebar.text_input("Naver Client ID", type="password")
-naver_secret = st.secrets.get("NAVER_CLIENT_SECRET", "") or st.sidebar.text_input("Naver Client Secret", type="password")
-gemini_key = st.secrets.get("GEMINI_API_KEY", "") or st.sidebar.text_input("Gemini API Key", type="password")
+client_id = st.secrets.get("NAVER_CLIENT_ID", "").strip() or st.sidebar.text_input("Naver Client ID", type="password").strip()
+client_secret = st.secrets.get("NAVER_CLIENT_SECRET", "").strip() or st.sidebar.text_input("Naver Client Secret", type="password").strip()
+gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip() or st.sidebar.text_input("Gemini API Key", type="password").strip()
 
-if not (naver_id and naver_secret and gemini_key):
+if not (client_id and client_secret and gemini_key):
     st.info("💡 사이드바에 API 키를 입력하거나 `.streamlit/secrets.toml`에 설정해주세요.")
 
 # ---------------------------------------------------------
-# 3. 네이버 뉴스 API 호출 함수
+# 3. 네이버 클라우드 API HUB 뉴스 호출 함수 (URL 수정 완료)
 # ---------------------------------------------------------
 def fetch_naver_news(query, display_count=10):
-    url = f"https://openapi.naver.com/v1/search/news.json?query={query}&display={display_count}&sort=date"
+    # NAVER API HUB 뉴스 검색 정식 URL
+    url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={query}&display={display_count}&sort=date"
+    
+    # NAVER API HUB 전용 헤더
     headers = {
-        "X-Naver-Client-Id": naver_id,
-        "X-Naver-Client-Secret": naver_secret
+        "X-NCP-APIGW-API-KEY-ID": client_id,
+        "X-NCP-APIGW-API-KEY": client_secret
     }
+    
     response = requests.get(url, headers=headers)
+
     if response.status_code == 200:
         return response.json().get('items', [])
     else:
-        st.error(f"네이버 API 호출 실패 (상태 코드: {response.status_code})")
+        st.error(f"네이버 API 호출 실패 (상태 코드: {response.status_code}) - Client ID와 Secret을 다시 확인해 주세요.")
         return []
 
 # ---------------------------------------------------------
-# 4. Gemini AI 기사 분석 함수 (구조화된 JSON 반환)
+# 4. Gemini AI 기사 분석 함수
 # ---------------------------------------------------------
 def analyze_article_with_gemini(title, description, api_key):
     client = genai.Client(api_key=api_key)
     
     prompt = f"""
     당신은 미디어 비평가이자 데이터 저널리스트입니다. 
-    다음 뉴스 기사 제목과 요약을 바탕으로 언론 보도 프레임과 편향성을 객관적으로 분석해주세요.
+    다음 뉴스 기사의 제목과 요약 내용을 바탕으로 언론 보도 프레임과 편향성을 객관적으로 분석해주세요.
 
     기사 제목: {title}
-    기사 내용: {description}
+    기사 요약: {description}
 
     반드시 다른 설명 없이 오직 아래 형식을 맞춘 유효한 JSON 형식으로만 응답하세요:
     {{
@@ -76,14 +80,16 @@ def analyze_article_with_gemini(title, description, api_key):
             model='gemini-2.5-flash',
             contents=prompt,
         )
-        # JSON 포맷 정제
         text = response.text.strip()
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0].strip()
-        elif "```" in text:
-            text = text.split("```")[1].strip()
+        
+        start_idx = text.find('{')
+        end_idx = text.rfind('}')
+        if start_idx != -1 and end_idx != -1:
+            json_str = text[start_idx:end_idx+1]
+            return json.loads(json_str)
+        else:
+            return json.loads(text)
             
-        return json.loads(text)
     except Exception as e:
         return {
             "summary": "AI 분석을 완료하지 못했습니다.",
@@ -98,7 +104,7 @@ def analyze_article_with_gemini(title, description, api_key):
 col_input1, col_input2 = st.columns([3, 1])
 
 with col_input1:
-    search_query = st.text_input("🔍 분석할 미디어 이슈/키워드를 입력하세요", value="인공지능 규제")
+    search_query = st.text_input("🔍 분석할 미디어 이슈/키워드를 입력하세요", value="마약")
 
 with col_input2:
     num_articles = st.selectbox("분석 기사 수", options=[5, 10, 15, 20], index=1)
@@ -106,14 +112,14 @@ with col_input2:
 start_analysis = st.button("🚀 뉴스 수집 & AI 분석 시작", use_container_width=True)
 
 if start_analysis:
-    if not (naver_id and naver_secret and gemini_key):
-        st.error("❌ 모든 API 키가 제공되어야 분석을 시작할 수 있습니다.")
+    if not (client_id and client_secret and gemini_key):
+        st.error("❌ Naver Client ID, Naver Client Secret, Gemini API 키가 모두 입력되어야 합니다.")
     else:
-        with st.spinner("네이버 뉴스 수집 중..."):
+        with st.spinner("네이버 뉴스 데이터 수집 중..."):
             news_items = fetch_naver_news(search_query, num_articles)
         
         if not news_items:
-            st.warning("수집된 뉴스가 없습니다. 키워드를 변경해보세요.")
+            st.warning("수집된 데이터가 없습니다. 키워드를 변경하거나 API 키를 확인하세요.")
         else:
             st.success(f"총 {len(news_items)}개의 최신 기사를 가져왔습니다. Gemini AI 분석 중...")
             
@@ -121,11 +127,9 @@ if start_analysis:
             analyzed_list = []
             
             for idx, item in enumerate(news_items):
-                # HTML 태그 제거
-                clean_title = item['title'].replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
-                clean_desc = item['description'].replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+                clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+                clean_desc = item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
                 
-                # Gemini 분석
                 ai_res = analyze_article_with_gemini(clean_title, clean_desc, gemini_key)
                 
                 analyzed_list.append({
@@ -134,10 +138,9 @@ if start_analysis:
                     "보도 프레임": ai_res.get("frame_category", "기타"),
                     "편향성 점수": ai_res.get("bias_score", 0),
                     "핵심 키워드": ", ".join(ai_res.get("key_keywords", [])),
-                    "링크": item.get('originallink') or item.get('link')
+                    "링크": item.get('originallink', item.get('link', '#'))
                 })
                 
-                # 진행 바 업데이트
                 progress_bar.progress((idx + 1) / len(news_items))
             
             df = pd.DataFrame(analyzed_list)
@@ -167,7 +170,7 @@ if start_analysis:
                 
                 with col_chart2:
                     st.markdown("#### 💡 프레임 분석 해설")
-                    st.write("언론이 이 주제를 다룰 때 어떤 **프레임(시각)**을 집중적으로 사용하는지 보여줍니다.")
+                    st.write("언론이 이 주제를 다룰 때 어떤 **프레임(시각)**을 집중적으로 사용하는지 비율로 보여줍니다.")
                     st.dataframe(frame_counts, hide_index=True, use_container_width=True)
 
             with tab2:
@@ -180,7 +183,7 @@ if start_analysis:
                     title="기사별 어조/편향성 점수 (-5: 비판적 ~ +5: 옹호적)",
                     range_y=[-5, 5]
                 )
-                fig_bar.update_layout(xaxis_showticklabels=False) # 제목 라벨이 길어 숨김
+                fig_bar.update_layout(xaxis_showticklabels=False)
                 st.plotly_chart(fig_bar, use_container_width=True)
 
             # ---------------------------------------------------------
