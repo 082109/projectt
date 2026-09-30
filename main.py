@@ -7,7 +7,7 @@ from datetime import datetime
 from google import genai
 
 # ---------------------------------------------------------
-# 1. 페이지 기본 설정 및 타이틀 (진짜 앱 스타일로 간소화)
+# 1. 페이지 기본 설정
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - AI 뉴스 프레임 분석기",
@@ -15,13 +15,106 @@ st.set_page_config(
     layout="wide"
 )
 
-# 상단 헤더 & 서브 타이틀
-st.title("📰 FrameLens")
-st.caption("실시간 이슈 키워드로 언론 보도 프레임과 어조를 다각도로 분석하세요.")
-st.divider()
+# ---------------------------------------------------------
+# 2. 커스텀 CSS 스타일링 (다크 네이비 테마 & 뉴스 앱 UI)
+# ---------------------------------------------------------
+st.markdown("""
+<style>
+    /* 전체 배경색 다크 네이비 적용 */
+    .stApp {
+        background-color: #0f172a;
+        color: #f8fafc;
+    }
+    
+    /* 상단 속보 전광판 (Ticker) 스타일 */
+    .ticker-wrap {
+        width: 100%;
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    .ticker-badge {
+        background-color: #ef4444;
+        color: white;
+        padding: 3px 8px;
+        font-weight: bold;
+        font-size: 0.78rem;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+        animation: pulse 2s infinite;
+    }
+    .ticker-text {
+        color: #cbd5e1;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    /* 서브 타이틀 및 헤더 스타일 */
+    .main-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #f8fafc;
+        margin-bottom: 2px;
+        letter-spacing: -0.5px;
+    }
+    .sub-title {
+        color: #94a3b8;
+        font-size: 0.98rem;
+        margin-bottom: 25px;
+    }
+
+    /* 검색 영역 카드 스타일 */
+    .search-box-container {
+        background: #1e293b;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #334155;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        margin-bottom: 25px;
+    }
+
+    /* 기사 체크박스 카드 스타일 */
+    div[data-testid="stForm"] {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    /* 구분선 컬러 수정 */
+    hr {
+        border-color: #334155 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. API 키 불러오기
+# 3. 실시간 속보 띠 & 헤더
+# ---------------------------------------------------------
+st.markdown("""
+<div class="ticker-wrap">
+    <span class="ticker-badge">LIVE BREAKING</span>
+    <span class="ticker-text">🔴 FrameLens AI 엔진 가동 중 | 실시간 포털 뉴스 보도 프레임 & 편향성 심층 탐지</span>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="main-title">📰 FrameLens</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">실시간 이슈 키워드로 언론 보도 프레임과 어조를 입체적으로 분석하세요.</div>', unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# 4. API 키 불러오기
 # ---------------------------------------------------------
 st.sidebar.header("🔑 API 설정")
 
@@ -45,7 +138,7 @@ def parse_pub_date(pub_date_str):
         return pub_date_str
 
 # ---------------------------------------------------------
-# 3. 네이버 뉴스 API 호출 함수 (최대 30건 수집)
+# 5. 네이버 뉴스 API 호출 함수
 # ---------------------------------------------------------
 def fetch_naver_news(query, display_count=30):
     url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={query}&display={display_count}&sort=date"
@@ -67,7 +160,7 @@ def fetch_naver_news(query, display_count=30):
         return []
 
 # ---------------------------------------------------------
-# 4. Gemini AI 기사 분석 함수
+# 6. Gemini AI 기사 분석 함수
 # ---------------------------------------------------------
 def analyze_article_with_gemini(title, description, api_key):
     client = genai.Client(api_key=api_key)
@@ -112,7 +205,7 @@ def analyze_article_with_gemini(title, description, api_key):
         }
 
 # ---------------------------------------------------------
-# 5. 검색 바 (포털 웹앱 느낌으로 간소화)
+# 7. 검색 바 (포털 웹앱 스타일)
 # ---------------------------------------------------------
 search_col1, search_col2 = st.columns([4, 1])
 
@@ -120,34 +213,32 @@ with search_col1:
     search_query = st.text_input(
         label="뉴스 검색", 
         value="마약", 
-        placeholder="키워드 또는 뉴스 주제를 입력하세요 (예: AI, 환경, 마약)",
-        label_visibility="collapsed" # 레이블 깔끔하게 숨기기
+        placeholder="검색할 뉴스 키워드나 이슈를 입력하세요 (예: AI 편향성, 기후위기, 마약)",
+        label_visibility="collapsed"
     )
 
 with search_col2:
-    search_btn = st.button("🔍 검색", use_container_width=True)
+    search_btn = st.button("🔍 뉴스 검색", use_container_width=True)
 
-# Session State를 활용해 검색 결과 저장
+# Session State 활용
 if search_btn or 'news_items' not in st.session_state:
     if client_id and client_secret:
-        with st.spinner("최신 뉴스를 검색하는 중..."):
+        with st.spinner("최신 관련 뉴스를 수집하는 중..."):
             st.session_state['news_items'] = fetch_naver_news(search_query)
             st.session_state['last_query'] = search_query
 
 # ---------------------------------------------------------
-# 6. 뉴스 검색 결과 및 선택 인터페이스
+# 8. 뉴스 목록 & AI 분석 신청
 # ---------------------------------------------------------
 if 'news_items' in st.session_state and st.session_state['news_items']:
-    st.markdown(f"### 📰 '{st.session_state.get('last_query', '')}' 관련 뉴스")
+    st.markdown(f"### 📋 '{st.session_state.get('last_query', '')}' 관련 실시간 뉴스")
     
     selected_articles = []
 
-    # 검색 결과 컨트롤 (전체 선택)
     col_sel1, col_sel2 = st.columns([1, 4])
     with col_sel1:
-        select_all = st.checkbox("기사 전체 선택")
+        select_all = st.checkbox("전체 기사 선택")
 
-    # 기사 목록 출력 (뉴스 앱 UI 느낌)
     with st.form("news_selection_form"):
         for idx, item in enumerate(st.session_state['news_items']):
             clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
@@ -160,7 +251,7 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
                 value=select_all,
                 key=f"chk_{idx}"
             )
-            st.caption(f"⏱️ {pub_date}  |  {clean_desc}")
+            st.caption(f"⏱️ **보도 일시:** {pub_date}  |  {clean_desc}")
             st.markdown(f"[🔗 원문 기사 보기]({link})")
             st.markdown("---")
 
@@ -172,18 +263,18 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
                     "pub_date": pub_date
                 })
 
-        submit_analysis = st.form_submit_button("⚡ 선택한 기사 AI 분석", use_container_width=True)
+        submit_analysis = st.form_submit_button("⚡ 선택한 기사 AI 프레임 분석", use_container_width=True)
 
     # ---------------------------------------------------------
-    # 7. AI 분석 및 결과 리포트
+    # 9. AI 분석 및 리포트
     # ---------------------------------------------------------
     if submit_analysis:
         if not selected_articles:
-            st.warning("⚠️ 분석할 기사를 1개 이상 선택해주세요.")
+            st.warning("⚠️ 분석할 기사를 1개 이상 선택해 주세요.")
         elif not gemini_key:
-            st.error("❌ Gemini API 키를 입력해주세요.")
+            st.error("❌ Gemini API 키를 입력해 주세요.")
         else:
-            st.info(f"선택한 {len(selected_articles)}개 기사의 보도 프레임을 분석하고 있습니다...")
+            st.info(f"선택한 {len(selected_articles)}개 기사의 보도 프레임을 정밀 분석 중입니다...")
             
             progress_bar = st.progress(0)
             analyzed_list = []
@@ -204,9 +295,8 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
                 progress_bar.progress((idx + 1) / len(selected_articles))
 
             df = pd.DataFrame(analyzed_list)
-            st.toast("분석 완료!", icon="🎉")
+            st.toast("AI 프레임 분석 완료!", icon="🎉")
 
-            # 결과 시각화 차트
             st.markdown("---")
             st.subheader("📊 프레임 & 편향성 분석 리포트")
             
@@ -217,13 +307,20 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
                 with col_chart1:
                     frame_counts = df['보도 프레임'].value_counts().reset_index()
                     frame_counts.columns = ['보도 프레임', '기사 수']
+                    
+                    # Plotly 테마도 다크 테마에 어울리게 세팅
                     fig_pie = px.pie(
                         frame_counts, 
                         values='기사 수', 
                         names='보도 프레임',
-                        title="보도 프레임 유형 비율",
+                        title="보도 프레임 점유율",
                         hole=0.4,
                         color_discrete_sequence=px.colors.qualitative.Pastel
+                    )
+                    fig_pie.update_layout(
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font_color='#f8fafc'
                     )
                     st.plotly_chart(fig_pie, use_container_width=True)
                 
@@ -241,11 +338,16 @@ if 'news_items' in st.session_state and st.session_state['news_items']:
                     title="기사별 어조 성향 (-5: 비판적 ~ +5: 옹호적)",
                     range_y=[-5, 5]
                 )
-                fig_bar.update_layout(xaxis_showticklabels=False)
+                fig_bar.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font_color='#f8fafc',
+                    xaxis_showticklabels=False
+                )
                 st.plotly_chart(fig_bar, use_container_width=True)
 
             # 상세 카드
-            st.subheader("📋 기사별 AI 분석 상세")
+            st.subheader("📋 기사별 AI 분석 상세 카드")
             for idx, row in df.iterrows():
                 with st.expander(f"[{row['보도 프레임']}] {row['제목']} ({row['보도 일시']})"):
                     col_a, col_b = st.columns([3, 1])
