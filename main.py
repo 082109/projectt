@@ -1,379 +1,294 @@
-import streamlit as st
+
+import os
 import requests
-import json
-import pandas as pd
-import plotly.express as px
-from datetime import datetime
+import streamlit as st
 from google import genai
 
-# ---------------------------------------------------------
-# 1. 페이지 기본 설정
-# ---------------------------------------------------------
+# -------------------------------
+# 기본 설정
+# -------------------------------
 st.set_page_config(
-    page_title="FrameLens - AI 뉴스 프레임 분석기",
+    page_title="뉴스픽 스튜디오",
     page_icon="📰",
     layout="wide"
 )
 
-# ---------------------------------------------------------
-# 2. 커스텀 CSS 스타일링 (극강의 딥 다크 모드)
-# ---------------------------------------------------------
+NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID", "")
+NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
 st.markdown("""
 <style>
-    /* 전체 배경을 울트라 딥 다크 컬러로 설정 */
-    .stApp {
-        background-color: #030712;
-        color: #f3f4f6;
-    }
-    
-    /* 사이드바 어둡게 */
-    section[data-testid="stSidebar"] {
-        background-color: #0b0f19;
-        border-right: 1px solid #1f2937;
-    }
-
-    /* 상단 속보 전광판 (Ticker) - 딥 블랙 & 글로우 효과 */
-    .ticker-wrap {
-        width: 100%;
-        background-color: #0b0f19;
-        border: 1px solid #1f2937;
-        border-radius: 8px;
-        padding: 10px 16px;
-        margin-bottom: 24px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-    }
-    .ticker-badge {
-        background-color: #dc2626;
-        color: white;
-        padding: 3px 8px;
-        font-weight: 800;
-        font-size: 0.75rem;
-        border-radius: 4px;
-        letter-spacing: 0.6px;
-        animation: pulse 2s infinite;
-    }
-    .ticker-text {
-        color: #9ca3af;
-        font-size: 0.88rem;
-        font-weight: 500;
-    }
-    
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.4; }
-        100% { opacity: 1; }
-    }
-
-    /* 타이틀 및 헤더 */
-    .main-title {
-        font-size: 2.3rem;
-        font-weight: 900;
-        color: #ffffff;
-        margin-bottom: 4px;
-        letter-spacing: -0.8px;
-    }
-    .sub-title {
-        color: #6b7280;
-        font-size: 0.95rem;
-        margin-bottom: 28px;
-    }
-
-    /* 입력창 및 폼 카드 다크 스타일링 */
-    div[data-testid="stForm"], .stTextInput > div > div {
-        background-color: #0b0f19 !important;
-        border: 1px solid #1f2937 !important;
-        border-radius: 10px !important;
-        color: #f3f4f6 !important;
-    }
-
-    /* 버튼 스타일 다크 커스텀 */
-    .stButton > button {
-        background-color: #1f2937;
-        color: #ffffff;
-        border: 1px solid #374151;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.2s ease;
-    }
-    .stButton > button:hover {
-        background-color: #374151;
-        border-color: #4b5563;
-        color: #ffffff;
-    }
-
-    /* 구분선 컬러 수정 */
-    hr {
-        border-color: #1f2937 !important;
-    }
-
-    /* Expander 아코디언 카드 다크 모드 */
-    .streamlit-expanderHeader {
-        background-color: #0b0f19 !important;
-        border-radius: 8px !important;
-        border: 1px solid #1f2937 !important;
-        color: #e5e7eb !important;
-    }
+.block-container {
+    max-width: 1050px;
+    padding-top: 2rem;
+}
+.hero {
+    padding: 35px;
+    border-radius: 20px;
+    background: linear-gradient(120deg, #172554, #2563a6);
+    color: white;
+    margin-bottom: 25px;
+}
+.hero h1 { color: white; font-size: 38px; }
+.hero p { color: #e2e8f0; font-size: 17px; }
+.news-card {
+    border: 1px solid #e2e8f0;
+    padding: 18px;
+    border-radius: 14px;
+    margin-bottom: 12px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# 3. 실시간 속보 띠 & 헤더
-# ---------------------------------------------------------
 st.markdown("""
-<div class="ticker-wrap">
-    <span class="ticker-badge">LIVE BREAKING</span>
-    <span class="ticker-text">🔴 FrameLens AI 실시간 탐지 엔진 작동 중 | 미디어 보도 프레임 & 편향성 다각도 투시</span>
+<div class="hero">
+    <h1>📰 뉴스픽 스튜디오</h1>
+    <p>뉴스에서 발견한 이슈를 나만의 콘텐츠로</p>
+    <p>관심 있는 뉴스를 검색하고, 나만의 콘텐츠를 기획해 보세요.</p>
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">📰 FrameLens</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">실시간 이슈 키워드로 언론 보도 프레임과 어조를 입체적으로 분석하세요.</div>', unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# 4. API 키 불러오기
-# ---------------------------------------------------------
-st.sidebar.header("🔑 API 설정")
+# -------------------------------
+# 네이버 뉴스 검색 API
+# -------------------------------
+def search_news(query, display=10):
+    url = "https://openapi.naver.com/v1/search/news.json"
 
-client_id = st.secrets.get("NAVER_CLIENT_ID", "").strip() or st.sidebar.text_input("Naver Client ID", type="password").strip()
-client_secret = st.secrets.get("NAVER_CLIENT_SECRET", "").strip() or st.sidebar.text_input("Naver Client Secret", type="password").strip()
-gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip() or st.sidebar.text_input("Gemini API Key", type="password").strip()
-
-if not (client_id and client_secret and gemini_key):
-    st.info("💡 사이드바에 API 키를 입력하거나 `.streamlit/secrets.toml`에 설정해주세요.")
-
-# ---------------------------------------------------------
-# 날짜 포맷 변환 함수 (RFC 822 -> YY-MM-DD HH:MM)
-# ---------------------------------------------------------
-def parse_pub_date(pub_date_str):
-    if not pub_date_str:
-        return "날짜 정보 없음"
-    try:
-        dt = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z")
-        return dt.strftime("%Y-%m-%d %H:%M")
-    except Exception:
-        return pub_date_str
-
-# ---------------------------------------------------------
-# 5. 네이버 뉴스 API 호출 함수
-# ---------------------------------------------------------
-def fetch_naver_news(query, display_count=30):
-    url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={query}&display={display_count}&sort=date"
-    
     headers = {
-        "X-NCP-APIGW-API-KEY-ID": client_id,
-        "X-NCP-APIGW-API-KEY": client_secret
+        "X-Naver-Client-Id": NAVER_CLIENT_ID,
+        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET
     }
-    
-    try:
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            return response.json().get('items', [])
-        else:
-            st.error(f"네이버 API 호출 실패 (상태 코드: {response.status_code}) - Client ID/Secret을 확인해 주세요.")
-            return []
-    except Exception as e:
-        st.error(f"뉴스 수집 중 오류 발생: {e}")
-        return []
 
-# ---------------------------------------------------------
-# 6. Gemini AI 기사 분석 함수
-# ---------------------------------------------------------
-def analyze_article_with_gemini(title, description, api_key):
-    client = genai.Client(api_key=api_key)
-    
-    prompt = f"""
-    당신은 미디어 비평가이자 데이터 저널리스트입니다. 
-    다음 뉴스 기사의 제목과 요약 내용을 바탕으로 언론 보도 프레임과 편향성을 객관적으로 분석해주세요.
+    params = {
+        "query": query,
+        "display": display,
+        "sort": "date"
+    }
 
-    기사 제목: {title}
-    기사 요약: {description}
+    response = requests.get(
+        url, headers=headers, params=params, timeout=15
+    )
+    response.raise_for_status()
 
-    반드시 다른 설명 없이 오직 아래 형식을 맞춘 유효한 JSON 형식으로만 응답하세요:
-    {{
-        "summary": "기사의 핵심 2줄 요약",
-        "frame_category": "보도 프레임 (다음 중 하나 선택: 갈등·대립 / 경제적 여파 / 정책·제도 / 인간적 비극 / 책임 소재 / 기타)",
-        "bias_score": -5부터 5 사이의 정수 (-5: 매우 비판적, 0: 중립·객관적, 5: 매우 옹호적),
-        "key_keywords": ["주요키워드1", "주요키워드2", "주요키워드3"]
-    }}
-    """
-    
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-        )
-        text = response.text.strip()
-        
-        start_idx = text.find('{')
-        end_idx = text.rfind('}')
-        if start_idx != -1 and end_idx != -1:
-            json_str = text[start_idx:end_idx+1]
-            return json.loads(json_str)
-        else:
-            return json.loads(text)
-            
-    except Exception as e:
-        return {
-            "summary": "AI 분석을 완료하지 못했습니다.",
-            "frame_category": "기타",
-            "bias_score": 0,
-            "key_keywords": ["분석오류"]
-        }
+    return response.json().get("items", [])
 
-# ---------------------------------------------------------
-# 7. 검색 바 (다크 웹앱 스타일)
-# ---------------------------------------------------------
-search_col1, search_col2 = st.columns([4, 1])
 
-with search_col1:
-    search_query = st.text_input(
-        label="뉴스 검색", 
-        value="마약", 
-        placeholder="검색할 뉴스 키워드나 이슈를 입력하세요 (예: AI 편향성, 기후위기, 마약)",
-        label_visibility="collapsed"
+def clean_html(text):
+    import re
+    text = re.sub(r"<[^>]*>", "", text or "")
+    return (
+        text.replace("&quot;", '"')
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&#39;", "'")
     )
 
-with search_col2:
-    search_btn = st.button("🔍 뉴스 검색", use_container_width=True)
 
-# Session State 활용
-if search_btn or 'news_items' not in st.session_state:
-    if client_id and client_secret:
-        with st.spinner("최신 뉴스를 수집하는 중..."):
-            st.session_state['news_items'] = fetch_naver_news(search_query)
-            st.session_state['last_query'] = search_query
+# -------------------------------
+# 제미나이 콘텐츠 기획
+# -------------------------------
+def make_content_plan(articles, content_type, audience, purpose):
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
-# ---------------------------------------------------------
-# 8. 뉴스 목록 & AI 분석 신청
-# ---------------------------------------------------------
-if 'news_items' in st.session_state and st.session_state['news_items']:
-    st.markdown(f"### 📋 '{st.session_state.get('last_query', '')}' 관련 실시간 뉴스")
-    
-    selected_articles = []
+    news_text = "\n\n".join([
+        f"기사 {i+1}\n"
+        f"제목: {article['title']}\n"
+        f"언론사: {article['source']}\n"
+        f"요약 정보: {article['description']}\n"
+        f"링크: {article['url']}"
+        for i, article in enumerate(articles)
+    ])
 
-    col_sel1, col_sel2 = st.columns([1, 4])
-    with col_sel1:
-        select_all = st.checkbox("전체 기사 선택")
+    prompt = f"""
+당신은 뉴스 기반 콘텐츠 기획을 돕는 미디어 기획자입니다.
 
-    with st.form("news_selection_form"):
-        for idx, item in enumerate(st.session_state['news_items']):
-            clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
-            clean_desc = item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
-            link = item.get('originallink', item.get('link', '#'))
-            pub_date = parse_pub_date(item.get('pubDate', ''))
+사용자가 선택한 뉴스의 제목과 검색 결과에 표시된 정보만을 바탕으로
+실행 가능한 콘텐츠 기획안을 작성하세요.
 
-            is_selected = st.checkbox(
-                f"**{clean_title}**",
-                value=select_all,
-                key=f"chk_{idx}"
-            )
-            st.caption(f"⏱️ **보도 일시:** {pub_date}  |  {clean_desc}")
-            st.markdown(f"[🔗 원문 기사 보기]({link})")
-            st.markdown("---")
+[선택한 뉴스]
+{news_text}
 
-            if is_selected:
-                selected_articles.append({
-                    "title": clean_title,
-                    "description": clean_desc,
-                    "link": link,
-                    "pub_date": pub_date
-                })
+[기획 조건]
+콘텐츠 유형: {content_type}
+주요 대상: {audience}
+전달 목적: {purpose}
 
-        submit_analysis = st.form_submit_button("⚡ 선택한 기사 AI 프레임 분석", use_container_width=True)
+다음 항목으로 한국어 기획안을 작성하세요.
 
-    # ---------------------------------------------------------
-    # 9. AI 분석 및 리포트
-    # ---------------------------------------------------------
-    if submit_analysis:
+1. 콘텐츠 제목 후보 3개
+2. 기획 의도
+3. 핵심 전달 메시지
+4. 콘텐츠 구성 및 전개 순서
+5. 관심을 끌 수 있는 도입 방식
+6. 추가로 확인하거나 취재할 질문 3개
+7. 사실 확인 시 주의할 점
+
+주의사항:
+- 기사에 없는 사실이나 통계를 만들어 내지 마세요.
+- 제목과 짧은 요약만으로 확인할 수 없는 내용은 단정하지 마세요.
+- 확인이 필요한 정보는 원문 확인이 필요하다고 밝혀 주세요.
+- 추상적인 설명보다 실제 콘텐츠 제작에 활용할 수 있는 구체적인 아이디어를 제시하세요.
+"""
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    return response.text
+
+
+# -------------------------------
+# 뉴스 검색 화면
+# -------------------------------
+st.subheader("🔎 1. 관심 있는 뉴스 검색")
+
+with st.form("search_form"):
+    query = st.text_input(
+        "검색어",
+        placeholder="예: 청소년 스마트폰 사용, 환경 문제, 대중문화"
+    )
+    search_button = st.form_submit_button(
+        "뉴스 검색하기", type="primary", use_container_width=True
+    )
+
+st.caption("추천 주제: 청소년 · 환경 · 사회문제 · 문화 · 경제")
+
+if "news_items" not in st.session_state:
+    st.session_state.news_items = []
+
+if search_button:
+    if not query.strip():
+        st.warning("검색할 키워드를 입력해 주세요.")
+    elif not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
+        st.error("네이버 API 키를 환경 변수에 설정해 주세요.")
+    else:
+        try:
+            with st.spinner("관련 뉴스를 검색하고 있어요..."):
+                results = search_news(query.strip())
+
+            st.session_state.news_items = [
+                {
+                    "title": clean_html(item.get("title", "")),
+                    "source": "네이버 뉴스 검색 결과",
+                    "description": clean_html(item.get("description", "")),
+                    "url": item.get("originallink") or item.get("link", ""),
+                    "date": item.get("pubDate", "")
+                }
+                for item in results
+            ]
+
+            st.session_state.search_query = query.strip()
+
+            if not results:
+                st.info("검색 결과가 없습니다. 다른 키워드를 입력해 보세요.")
+
+        except requests.RequestException as e:
+            st.error(f"뉴스 검색에 실패했어요. API 키와 요청 설정을 확인해 주세요. ({e})")
+
+# -------------------------------
+# 검색 결과 표시 및 기사 선택
+# -------------------------------
+articles = st.session_state.news_items
+
+if articles:
+    st.divider()
+    st.subheader("🗞️ 2. 기획에 활용할 뉴스 선택")
+    st.write("콘텐츠 기획에 사용할 기사를 하나 이상 선택해 주세요.")
+
+    selected_indices = []
+
+    for i, article in enumerate(articles):
+        with st.container(border=True):
+            st.markdown(f"**{i+1}. {article['title']}**")
+            st.caption(f"게시일: {article['date']}")
+            st.write(article["description"])
+
+            if article["url"]:
+                st.markdown(f"[기사 원문 확인하기]({article['url']})")
+
+            if st.checkbox("이 기사 선택", key=f"article_{i}"):
+                selected_indices.append(i)
+
+    selected_articles = [articles[i] for i in selected_indices]
+
+    st.divider()
+    st.subheader("💡 3. 어떤 콘텐츠를 만들까요?")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        content_type = st.selectbox(
+            "콘텐츠 유형",
+            ["카드뉴스", "숏폼 영상", "인터뷰", "자유 기획"]
+        )
+
+        audience = st.selectbox(
+            "주요 대상",
+            ["청소년", "일반 대중", "학생 및 교육 공동체", "직접 입력"]
+        )
+
+        if audience == "직접 입력":
+            audience = st.text_input("주요 대상 직접 입력")
+
+    with col2:
+        purpose = st.selectbox(
+            "전달 목적",
+            ["정보 전달", "문제 제기", "인식 개선", "다양한 관점 소개"]
+        )
+
+        st.info(
+            "선택한 뉴스와 제작 조건을 바탕으로 "
+            "제미나이가 콘텐츠 기획 초안을 작성합니다."
+        )
+
+    if st.button(
+        "✨ 콘텐츠 기획안 만들기",
+        type="primary",
+        use_container_width=True
+    ):
         if not selected_articles:
-            st.warning("⚠️ 분석할 기사를 1개 이상 선택해 주세요.")
-        elif not gemini_key:
-            st.error("❌ Gemini API 키를 입력해 주세요.")
+            st.warning("먼저 뉴스 기사를 선택해 주세요.")
+        elif not GEMINI_API_KEY:
+            st.error("제미나이 API 키를 환경 변수에 설정해 주세요.")
         else:
-            st.info(f"선택한 {len(selected_articles)}개 기사의 보도 프레임을 정밀 분석 중입니다...")
-            
-            progress_bar = st.progress(0)
-            analyzed_list = []
-
-            for idx, article in enumerate(selected_articles):
-                ai_res = analyze_article_with_gemini(article['title'], article['description'], gemini_key)
-                
-                analyzed_list.append({
-                    "제목": article['title'],
-                    "보도 일시": article['pub_date'],
-                    "AI 요약": ai_res.get("summary", ""),
-                    "보도 프레임": ai_res.get("frame_category", "기타"),
-                    "편향성 점수": ai_res.get("bias_score", 0),
-                    "핵심 키워드": ", ".join(ai_res.get("key_keywords", [])),
-                    "링크": article['link']
-                })
-                
-                progress_bar.progress((idx + 1) / len(selected_articles))
-
-            df = pd.DataFrame(analyzed_list)
-            st.toast("AI 프레임 분석 완료!", icon="🎉")
-
-            st.markdown("---")
-            st.subheader("📊 프레임 & 편향성 분석 리포트")
-            
-            tab1, tab2 = st.tabs(["보도 프레임 점유율", "어조 / 편향성 분포"])
-            
-            with tab1:
-                col_chart1, col_chart2 = st.columns([1, 1])
-                with col_chart1:
-                    frame_counts = df['보도 프레임'].value_counts().reset_index()
-                    frame_counts.columns = ['보도 프레임', '기사 수']
-                    
-                    # 어두운 배경에 맞는 차트 커스텀
-                    fig_pie = px.pie(
-                        frame_counts, 
-                        values='기사 수', 
-                        names='보도 프레임',
-                        title="보도 프레임 점유율",
-                        hole=0.4,
-                        color_discrete_sequence=px.colors.qualitative.Dark24
+            try:
+                with st.spinner("뉴스를 바탕으로 기획안을 작성하고 있어요..."):
+                    plan = make_content_plan(
+                        selected_articles,
+                        content_type,
+                        audience,
+                        purpose
                     )
-                    fig_pie.update_layout(
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        font_color='#f3f4f6'
-                    )
-                    st.plotly_chart(fig_pie, use_container_width=True)
-                
-                with col_chart2:
-                    st.markdown("#### 💡 프레임별 요약")
-                    st.dataframe(frame_counts, hide_index=True, use_container_width=True)
 
-            with tab2:
-                fig_bar = px.bar(
-                    df,
-                    x='제목',
-                    y='편향성 점수',
-                    color='편향성 점수',
-                    color_continuous_scale='RdBu_r',
-                    title="기사별 어조 성향 (-5: 비판적 ~ +5: 옹호적)",
-                    range_y=[-5, 5]
-                )
-                fig_bar.update_layout(
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font_color='#f3f4f6',
-                    xaxis_showticklabels=False
-                )
-                st.plotly_chart(fig_bar, use_container_width=True)
+                st.session_state.generated_plan = plan
 
-            # 상세 카드
-            st.subheader("📋 기사별 AI 분석 상세 카드")
-            for idx, row in df.iterrows():
-                with st.expander(f"[{row['보도 프레임']}] {row['제목']} ({row['보도 일시']})"):
-                    col_a, col_b = st.columns([3, 1])
-                    with col_a:
-                        st.markdown(f"⏱️ **보도 일시:** `{row['보도 일시']}`")
-                        st.markdown(f"**AI 요약:** {row['AI 요약']}")
-                        st.markdown(f"**핵심 키워드:** `{row['핵심 키워드']}`")
-                    with col_b:
-                        st.metric("어조/편향성 점수", f"{row['편향성 점수']} / 5")
-                        st.markdown(f"[🔗 원문 보기]({row['링크']})")
+            except Exception as e:
+                st.error(
+                    "기획안 생성에 실패했어요. 제미나이 API 키, "
+                    f"모델 지원 여부 및 사용량을 확인해 주세요. ({e})"
+                )
+
+# -------------------------------
+# 생성된 기획안
+# -------------------------------
+if st.session_state.get("generated_plan"):
+    st.divider()
+    st.subheader("📝 4. 나의 콘텐츠 기획안")
+
+    plan = st.session_state.generated_plan
+
+    st.markdown(plan)
+
+    st.download_button(
+        label="기획안 다운로드",
+        data=plan,
+        file_name="뉴스픽_콘텐츠_기획안.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+
+st.divider()
+st.caption("뉴스픽 스튜디오 | 뉴스 검색 결과를 바탕으로 콘텐츠 아이디어를 기획합니다.")
