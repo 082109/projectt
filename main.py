@@ -162,7 +162,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
     st.markdown(f'<div class="guide-box">📋 <b>\'{st.session_state.get("last_query", "")}\'</b> 관련 뉴스 목록입니다. 기획에 활용할 기사를 선택하고 아래에서 콘텐츠 형식을 골라주세요!</div>', unsafe_allow_html=True)
 
     with st.form("planning_form"):
-        # 기사 선택을 위한 라디오 버튼 (단일 선택으로 기획 집중도 높임)
         article_options = {}
         for idx, item in enumerate(st.session_state['news_pool']):
             clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
@@ -203,13 +202,14 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
 
 # ---------------------------------------------------------
 # 6. 생성된 기획안 출력 섹션
-# ---------------------------------------------------------
+# -------------------
 if 'plan_result' in st.session_state:
     st.markdown("---")
     st.subheader("📊 AI 미디어 콘텐츠 기획 리포트")
     
     art = st.session_state['selected_article']
-    st.info(f"📌 **활용 뉴스:** {art['title']} ([🔗 원문 보기]({art['link']))")
+    link_url = art['link']
+    st.info(f"📌 **활용 뉴스:** {art['title']} ([🔗 원문 보기]({link_url}))")
     st.markdown(f"🎨 **선택한 미디어 형식:** `{st.session_state['content_format']}`")
     
     st.markdown(st.session_state['plan_result'])
