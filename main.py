@@ -6,74 +6,123 @@ from datetime import datetime
 from google import genai
 
 # ---------------------------------------------------------
-# 1. 페이지 기본 설정 (딥 다크 모드)
+# 1. 페이지 기본 설정 및 우아한 세리프 폰트 UI 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="FrameLens - 뉴스 콘텐츠 기획 도우미",
+    page_title="FrameLens - 뉴스 미디어 기획 포털",
     page_icon="🎬",
     layout="wide"
 )
 
+# 구글 폰트 Noto Serif KR 및 가독성 높은 산세리프 혼용 적용
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
+
+    /* 배경 및 기본 폰트 설정 */
     .stApp {
-        background-color: #030712;
+        background-color: #080c14;
         color: #f3f4f6;
+        font-family: 'Noto Serif KR', serif !important;
     }
     section[data-testid="stSidebar"] {
-        background-color: #0b0f19;
-        border-right: 1px solid #1f2937;
+        background-color: #0f172a;
+        border-right: 1px solid #1e293b;
+        font-family: 'Noto Serif KR', serif !important;
     }
-    .main-title {
-        font-size: 2.3rem;
+    
+    /* 포털 헤더 타이틀 */
+    .hero-title {
+        font-family: 'Noto Serif KR', serif !important;
+        font-size: 3.2rem;
         font-weight: 900;
         color: #ffffff;
-        margin-bottom: 4px;
-        letter-spacing: -0.8px;
+        text-align: center;
+        margin-top: 15px;
+        margin-bottom: 8px;
+        letter-spacing: -1px;
     }
-    .sub-title {
-        color: #6b7280;
-        font-size: 0.95rem;
-        margin-bottom: 25px;
+    .hero-subtitle {
+        font-family: 'Noto Serif KR', serif !important;
+        color: #94a3b8;
+        font-size: 1.1rem;
+        text-align: center;
+        margin-bottom: 35px;
+        font-weight: 300;
     }
-    .guide-box {
-        background-color: #0b0f19;
-        border: 1px solid #1f2937;
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 20px;
-        color: #9ca3af;
-        font-size: 0.9rem;
+
+    /* 포털 스타일 대형 시안 네온 검색창 박스 */
+    .search-container {
+        background: #0d1527;
+        border: 2px solid #22d3ee;
+        border-radius: 20px;
+        padding: 10px 20px;
+        box-shadow: 0 0 25px rgba(34, 211, 238, 0.3);
+        margin-bottom: 35px;
     }
-    div[data-testid="stForm"], .stTextInput > div > div {
-        background-color: #0b0f19 !important;
-        border: 1px solid #1f2937 !important;
-        border-radius: 10px !important;
-        color: #f3f4f6 !important;
+
+    /* stTextInput 커스텀 */
+    div[data-baseweb="input"] {
+        background-color: transparent !important;
+        border: none !important;
+        color: #ffffff !important;
+        font-size: 1.15rem !important;
+        font-family: 'Noto Serif KR', serif !important;
     }
+    div[data-baseweb="input"] input {
+        color: #ffffff !important;
+    }
+
+    /* 커스텀 버튼 스타일링 */
     .stButton > button {
-        background-color: #1f2937;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: #ffffff;
-        border: 1px solid #374151;
-        border-radius: 8px;
-        font-weight: 600;
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        height: 50px;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+        transition: all 0.2s ease;
+        font-family: 'Noto Serif KR', serif !important;
     }
     .stButton > button:hover {
-        background-color: #374151;
-        border-color: #4b5563;
-        color: #ffffff;
+        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+        box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
+        transform: translateY(-1px);
     }
+
+    /* 뉴스 목록 카드 폰트 및 박스 스타일 */
+    .news-card-box {
+        font-family: 'Noto Serif KR', serif !important;
+    }
+    
+    /* 폼 영역 박스 커스텀 */
+    div[data-testid="stForm"] {
+        background-color: #0d1527 !important;
+        border: 1px solid #1e293b !important;
+        border-radius: 18px !important;
+        padding: 26px !important;
+        font-family: 'Noto Serif KR', serif !important;
+    }
+
+    /* 타이틀 및 헤더 요소 폰트 가독성 보장 */
+    h1, h2, h3, h4, label {
+        font-family: 'Noto Serif KR', serif !important;
+    }
+
     hr {
-        border-color: #1f2937 !important;
+        border-color: #1e293b !important;
+        margin: 25px 0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. 헤더 및 세션 상태 초기화
+# 2. 헤더 섹션
 # ---------------------------------------------------------
-st.markdown('<div class="main-title">🎬 FrameLens : 뉴스 콘텐츠 기획 도우미</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">관심 뉴스를 검색하고, 다양한 미디어 콘텐츠 형식(카드뉴스·포스터·미니북·만화)으로 기획·전환해보세요.</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-title">FrameLens</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-subtitle">트렌드 뉴스를 최신순으로 탐색하고, 세련된 미디어 콘텐츠 기획안으로 재구성하세요.</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 3. API 설정
@@ -96,8 +145,8 @@ def parse_pub_date(pub_date_str):
     except Exception:
         return pub_date_str
 
-# 네이버 뉴스 수집 함수
-def fetch_naver_news(query, display_count=15):
+# 네이버 뉴스 수집 함수 (최신순 50개)
+def fetch_naver_news(query, display_count=50):
     url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={query}&display={display_count}&sort=date"
     headers = {
         "X-NCP-APIGW-API-KEY-ID": client_id,
@@ -112,7 +161,7 @@ def fetch_naver_news(query, display_count=15):
     except Exception:
         return []
 
-# Gemini를 통한 미디어 콘텐츠 기획안 생성 함수
+# Gemini 기획안 생성 함수
 def generate_content_plan(selected_title, content_format, api_key):
     client = genai.Client(api_key=api_key)
     prompt = f"""
@@ -130,31 +179,100 @@ def generate_content_plan(selected_title, content_format, api_key):
     ### 🔍 5. 추가 취재 또는 연출 팁 제안
     """
     
-    # 지원 가능한 모델 우선순위 순서대로 시도
     model_candidates = ['gemini-2.5-flash', 'gemini-1.5-flash']
-    
     for model_name in model_candidates:
         try:
             response = client.models.generate_content(model=model_name, contents=prompt)
             return response.text
-        except Exception as e:
+        except Exception:
             continue
             
     return "기획안 생성 중 오류가 발생했습니다. Gemini API 키 및 모델 상태를 확인해 주세요."
 
 # ---------------------------------------------------------
-# 4. 검색 바 (뉴스 검색 기능)
+# 4. 시안 네온 검색 바 UI
 # ---------------------------------------------------------
-col_s1, col_s2 = st.columns([4, 1])
-with col_s1:
+st.markdown('<div class="search-container">', unsafe_allow_html=True)
+search_col1, search_col2 = st.columns([5, 1])
+with search_col1:
     search_query = st.text_input(
-        "뉴스 검색",
+        "뉴스 검색어 입력",
         value="청소년 수면 부족",
-        placeholder="검색할 키워드를 입력하세요 (예: 청소년 수면 부족, 기후위기, AI 에듀)",
+        placeholder="🔍 이슈 키워드를 입력하세요 (예: 청소년 수면, 기후위기, AI 윤리, 딥페이크)",
         label_visibility="collapsed"
     )
-with col_s2:
-    search_btn = st.button("🔍 뉴스 검색", use_container_width=True)
+with search_col2:
+    search_btn = st.button("🔍 검색", use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 if search_btn or 'news_pool' not in st.session_state:
     if client_id and client_secret:
+        with st.spinner("최신 뉴스를 불러오는 중..."):
+            st.session_state['news_pool'] = fetch_naver_news(search_query)
+            st.session_state['last_query'] = search_query
+
+# ---------------------------------------------------------
+# 5. 뉴스 실시간 최신순 라인업 & 콘텐츠 변환 폼
+# ---------------------------------------------------------
+if 'news_pool' in st.session_state and st.session_state['news_pool']:
+    news_count = len(st.session_state['news_pool'])
+    st.markdown(f"### 📰 '{st.session_state.get('last_query', '')}' 최신 뉴스 검색 결과 ({news_count}건)")
+    st.caption("기사들을 최신 시각순으로 정렬했습니다. 기획으로 발전시킬 뉴스 1개를 선택해보세요.")
+
+    with st.form("planning_form"):
+        article_options = {}
+        for idx, item in enumerate(st.session_state['news_pool']):
+            clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+            clean_desc = item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+            link = item.get('originallink', item.get('link', '#'))
+            pub_date = parse_pub_date(item.get('pubDate', ''))
+            
+            label = f"[{pub_date}] {clean_title}"
+            article_options[label] = {"title": clean_title, "link": link, "desc": clean_desc, "date": pub_date}
+
+        selected_label = st.radio(
+            "기사 선택",
+            options=list(article_options.keys()),
+            label_visibility="collapsed"
+        )
+
+        st.markdown("---")
+        st.markdown("### 🎨 기획할 미디어 콘텐츠 형식 선택")
+        content_format = st.selectbox(
+            "형식 선택",
+            [
+                "인스타그램 카드뉴스",
+                "공익 캠페인 포스터",
+                "미니북",
+                "만화 (컷툰/웹툰)"
+            ],
+            label_visibility="collapsed"
+        )
+
+        submit_plan = st.form_submit_button("🚀 AI 미디어 콘텐츠 기획안 생성하기", use_container_width=True)
+
+    if submit_plan:
+        if not gemini_key:
+            st.error("❌ Gemini API 키를 입력해 주세요.")
+        else:
+            selected_article = article_options[selected_label]
+            st.session_state['selected_article'] = selected_article
+            st.session_state['content_format'] = content_format
+            
+            with st.spinner(f"'{content_format}' 형식의 미디어 기획안을 작성하는 중..."):
+                plan_result = generate_content_plan(selected_article['title'], content_format, gemini_key)
+                st.session_state['plan_result'] = plan_result
+
+# ---------------------------------------------------------
+# 6. 생성된 기획안 출력 대시보드
+# ---------------------------------------------------------
+if 'plan_result' in st.session_state:
+    st.markdown("---")
+    st.markdown("### 📊 AI 미디어 콘텐츠 기획 리포트")
+    
+    art = st.session_state['selected_article']
+    link_url = art['link']
+    st.info(f"📌 **선택한 뉴스:** {art['title']} | ⏱️ {art['date']} ([🔗 원문 기사 보기]({link_url}))")
+    st.markdown(f"🎨 **변환 형식:** `{st.session_state['content_format']}`")
+    
+    st.markdown(st.session_state['plan_result'])
