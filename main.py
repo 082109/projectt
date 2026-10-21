@@ -160,7 +160,7 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# Gemini 기획안 생성 함수 (오류 및 예외 완전 보완)
+# Gemini 기획안 생성 함수 (표준 모델명 gemini-2.5-flash 적용)
 def generate_content_plan(selected_title, content_format, api_key):
     try:
         client = genai.Client(api_key=api_key)
@@ -179,21 +179,18 @@ def generate_content_plan(selected_title, content_format, api_key):
         ### 5. 추가 취재 또는 연출 팁 제안
         """
         
-        # 모델 시도
-        model_candidates = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro']
-        last_error = ""
-        for model_name in model_candidates:
-            try:
-                response = client.models.generate_content(model=model_name, contents=prompt)
-                if response and response.text:
-                    return response.text
-            except Exception as e:
-                last_error = str(e)
-                continue
-                
-        return f"❌ 기획안 생성 중 오류가 발생했습니다: {last_error}"
+        # 지원되는 안정적인 최신 플래시 모델 호출
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+        if response and response.text:
+            return response.text
+        else:
+            return "❌ AI로부터 응답을 받지 못했습니다."
+            
     except Exception as err:
-        return f"❌ API 연결 오류: {str(err)}"
+        return f"❌ 기획안 생성 중 오류가 발생했습니다: {str(err)}"
 
 # ---------------------------------------------------------
 # 4. 시안 네온 검색 바 UI
@@ -292,7 +289,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
 
         submit_plan = st.button("AI 미디어 콘텐츠 기획안 생성하기", use_container_width=True)
 
-        # 버튼 클릭 이벤트 발생 시 기획안 생성 및 세션 저장[cite: 11]
         if submit_plan:
             if not gemini_key:
                 st.error("❌ 사이드바에 Gemini API Key를 입력해 주세요!")
@@ -306,7 +302,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
                     st.session_state['content_format'] = content_format
                     st.session_state['plan_result'] = plan_result
 
-        # 저장된 결과가 있으면 항상 출력되도록 보장
         if 'plan_result' in st.session_state and st.session_state['plan_result']:
             st.markdown('<div class="right-card-box" style="border-color: #22d3ee; box-shadow: 0 0 15px rgba(34, 211, 238, 0.2); margin-top: 25px;">', unsafe_allow_html=True)
             st.markdown("### AI 미디어 콘텐츠 기획 리포트")
