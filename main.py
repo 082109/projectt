@@ -145,7 +145,9 @@ def parse_pub_date(pub_date_str):
 
 # 네이버 뉴스 수집 함수 (최신순 100개 대량 수집)
 def fetch_naver_news(query, display_count=100):
-    url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={query}&display={display_count}&sort=date"
+    # 검색어가 빈 문자열이거나 유효하지 않은 경우 기본 최신 종합 이슈 뉴스 수집
+    search_term = query.strip() if query and query.strip() else "뉴스"
+    url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={search_term}&display={display_count}&sort=date"
     headers = {
         "X-NCP-APIGW-API-KEY-ID": client_id,
         "X-NCP-APIGW-API-KEY": client_secret
@@ -195,8 +197,8 @@ search_col1, search_col2 = st.columns([5, 1])
 with search_col1:
     search_query = st.text_input(
         "뉴스 검색어 입력",
-        value="청소년 수면 부족",
-        placeholder="이슈 키워드를 입력하세요 (예: 청소년 수면, 기후위기, AI 윤리, 딥페이크)",
+        value="",
+        placeholder="검색어를 입력해 주세요 (예: 청소년 수면, 기후위기, AI 윤리, 딥페이크)",
         label_visibility="collapsed"
     )
 with search_col2:
@@ -207,7 +209,7 @@ if search_btn or 'news_pool' not in st.session_state:
     if client_id and client_secret:
         with st.spinner("최신 뉴스를 불러오는 중..."):
             st.session_state['news_pool'] = fetch_naver_news(search_query)
-            st.session_state['last_query'] = search_query
+            st.session_state['last_query'] = search_query.strip() if search_query.strip() else "전체 최신 이슈"
             st.session_state['page_number'] = 1
 
 # ---------------------------------------------------------
@@ -233,7 +235,7 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
     # [왼쪽 컬럼] 최신 뉴스 라인업 & 페이지 네이션
     # -----------------------------------------------------
     with left_col:
-        st.markdown(f"### '{st.session_state.get('last_query', '')}' 최신 뉴스 검색 결과 ({total_news_count}건)")
+        st.markdown(f"### '{st.session_state.get('last_query', '전체 최신 이슈')}' 최신 뉴스 검색 결과 ({total_news_count}건)")
         st.caption(f"최신순으로 정렬된 기사 목록입니다. (페이지 {current_page} / {total_pages})")
 
         # 기사 목록 구성
@@ -274,7 +276,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
     # [오른쪽 컬럼] 변환할 미디어 형식 선택 & AI 리포트 출력
     # -----------------------------------------------------
     with right_col:
-        # 비어 있던 카드 상자 껍데기 잔상 제거 및 내부로 제목 통합[cite: 12]
         st.markdown("### 기획할 미디어 콘텐츠 유형 선택")
         
         content_format = st.selectbox(
