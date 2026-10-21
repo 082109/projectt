@@ -143,9 +143,8 @@ def parse_pub_date(pub_date_str):
     except Exception:
         return pub_date_str
 
-# 네이버 뉴스 수집 함수 (최신순 100개 대량 수집)
+# 네이버 뉴스 수집 함수
 def fetch_naver_news(query, display_count=100):
-    # 검색어가 빈 문자열이거나 유효하지 않은 경우 기본 최신 종합 이슈 뉴스 수집
     search_term = query.strip() if query and query.strip() else "뉴스"
     url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={search_term}&display={display_count}&sort=date"
     headers = {
@@ -161,33 +160,40 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# Gemini 기획안 생성 함수
+# Gemini 기획안 생성 함수 (오류 및 예외 완전 보완)
 def generate_content_plan(selected_title, content_format, api_key):
-    client = genai.Client(api_key=api_key)
-    prompt = f"""
-    당신은 창의적인 미디어 콘텐츠 프로듀서이자 스토리텔러입니다.
-    다음 뉴스 기사 제목을 바탕으로 선택된 미디어 형식에 맞춘 구체적인 콘텐츠 기획안을 작성해주세요.
+    try:
+        client = genai.Client(api_key=api_key)
+        prompt = f"""
+        당신은 창의적인 미디어 콘텐츠 프로듀서이자 스토리텔러입니다.
+        다음 뉴스 기사 제목을 바탕으로 선택된 미디어 형식에 맞춘 구체적인 콘텐츠 기획안을 작성해주세요.
 
-    - 뉴스 기사 제목: {selected_title}
-    - 타겟 콘텐츠 형식: {content_format} (인스타그램 카드뉴스, 공익 캠페인 포스터, 미니북, 만화 중 하나)
+        - 뉴스 기사 제목: {selected_title}
+        - 타겟 콘텐츠 형식: {content_format} (인스타그램 카드뉴스, 공익 캠페인 포스터, 미니북, 만화 중 하나)
 
-    반드시 아래 마크다운 구조에 맞춰서 알차게 작성해줘:
-    ### 1. 기획 의도 및 핵심 메시지
-    ### 2. 타깃 독자층
-    ### 3. 형식별 전달 방식 및 레이아웃/장면 구성안 (선택한 {content_format} 형식의 구체적 컷/페이지/디자인 연출 묘사)
-    ### 4. 매체 특성에 따른 메시지 표현 차별점 (이 형식이 왜 효과적인지)
-    ### 5. 추가 취재 또는 연출 팁 제안
-    """
-    
-    model_candidates = ['gemini-2.5-flash', 'gemini-1.5-flash']
-    for model_name in model_candidates:
-        try:
-            response = client.models.generate_content(model=model_name, contents=prompt)
-            return response.text
-        except Exception:
-            continue
-            
-    return "기획안 생성 중 오류가 발생했습니다. Gemini API 키 및 모델 상태를 확인해 주세요."
+        반드시 아래 마크다운 구조에 맞춰서 알차게 작성해줘:
+        ### 1. 기획 의도 및 핵심 메시지
+        ### 2. 타깃 독자층
+        ### 3. 형식별 전달 방식 및 레이아웃/장면 구성안 (선택한 {content_format} 형식의 구체적 컷/페이지/디자인 연출 묘사)
+        ### 4. 매체 특성에 따른 메시지 표현 차별점 (이 형식이 왜 효과적인지)
+        ### 5. 추가 취재 또는 연출 팁 제안
+        """
+        
+        # 모델 시도
+        model_candidates = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro']
+        last_error = ""
+        for model_name in model_candidates:
+            try:
+                response = client.models.generate_content(model=model_name, contents=prompt)
+                if response and response.text:
+                    return response.text
+            except Exception as e:
+                last_error = str(e)
+                continue
+                
+        return f"❌ 기획안 생성 중 오류가 발생했습니다: {last_error}"
+    except Exception as err:
+        return f"❌ API 연결 오류: {str(err)}"
 
 # ---------------------------------------------------------
 # 4. 시안 네온 검색 바 UI
@@ -219,7 +225,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
     all_news = st.session_state['news_pool']
     total_news_count = len(all_news)
     
-    # 페이징 계산 (페이지당 10개)
     items_per_page = 10
     total_pages = max(1, (total_news_count + items_per_page - 1) // items_per_page)
     
@@ -228,7 +233,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
     end_idx = start_idx + items_per_page
     current_news_batch = all_news[start_idx:end_idx]
 
-    # 좌우 컬럼 나누기
     left_col, right_col = st.columns([1.2, 1])
 
     # -----------------------------------------------------
@@ -238,7 +242,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
         st.markdown(f"### '{st.session_state.get('last_query', '전체 최신 이슈')}' 최신 뉴스 검색 결과 ({total_news_count}건)")
         st.caption(f"최신순으로 정렬된 기사 목록입니다. (페이지 {current_page} / {total_pages})")
 
-        # 기사 목록 구성
         article_options = {}
         for idx, item in enumerate(current_news_batch):
             clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
@@ -249,7 +252,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
             label = f"[{pub_date}] {clean_title}"
             article_options[label] = {"title": clean_title, "link": link, "desc": clean_desc, "date": pub_date}
 
-        # 라디오 버튼으로 선택
         selected_label = st.radio(
             "기사 선택",
             options=list(article_options.keys()),
@@ -257,7 +259,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
             label_visibility="collapsed"
         )
 
-        # 페이지 이동 버튼 영역
         p_col1, p_col2, p_col3 = st.columns([1, 2, 1])
         with p_col1:
             if current_page > 1:
@@ -291,8 +292,22 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
 
         submit_plan = st.button("AI 미디어 콘텐츠 기획안 생성하기", use_container_width=True)
 
-        # AI 기획안 결과 출력 섹션 (오른쪽 하단 카드)
-        if 'plan_result' in st.session_state:
+        # 버튼 클릭 이벤트 발생 시 기획안 생성 및 세션 저장[cite: 11]
+        if submit_plan:
+            if not gemini_key:
+                st.error("❌ 사이드바에 Gemini API Key를 입력해 주세요!")
+            elif selected_label not in article_options:
+                st.warning("⚠️ 선택된 뉴스 기사 정보를 찾을 수 없습니다.")
+            else:
+                selected_article = article_options[selected_label]
+                with st.spinner("AI 기획안을 작성하고 있습니다..."):
+                    plan_result = generate_content_plan(selected_article['title'], content_format, gemini_key)
+                    st.session_state['selected_article'] = selected_article
+                    st.session_state['content_format'] = content_format
+                    st.session_state['plan_result'] = plan_result
+
+        # 저장된 결과가 있으면 항상 출력되도록 보장
+        if 'plan_result' in st.session_state and st.session_state['plan_result']:
             st.markdown('<div class="right-card-box" style="border-color: #22d3ee; box-shadow: 0 0 15px rgba(34, 211, 238, 0.2); margin-top: 25px;">', unsafe_allow_html=True)
             st.markdown("### AI 미디어 콘텐츠 기획 리포트")
             
