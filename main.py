@@ -19,7 +19,6 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
 
-    /* 배경 및 기본 폰트 설정 */
     .stApp {
         background-color: #080c14;
         color: #f3f4f6;
@@ -31,7 +30,6 @@ st.markdown("""
         font-family: 'Noto Serif KR', serif !important;
     }
     
-    /* 포털 헤더 타이틀 */
     .hero-title {
         font-family: 'Noto Serif KR', serif !important;
         font-size: 3rem;
@@ -51,7 +49,6 @@ st.markdown("""
         font-weight: 300;
     }
 
-    /* 포털 스타일 대형 시안 네온 검색창 박스 */
     .search-container {
         background: #0d1527;
         border: 2px solid #22d3ee;
@@ -61,7 +58,6 @@ st.markdown("""
         margin-bottom: 30px;
     }
 
-    /* stTextInput 커스텀 */
     div[data-baseweb="input"] {
         background-color: transparent !important;
         border: none !important;
@@ -73,7 +69,6 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* 커스텀 버튼 스타일링 */
     .stButton > button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: #ffffff;
@@ -92,16 +87,24 @@ st.markdown("""
         transform: translateY(-1px);
     }
 
-    /* 오른쪽 카드 박스 스타일링 */
-    .right-card-box {
-        background-color: #0d1527;
-        border: 1px solid #1e293b;
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 20px;
+    /* 실제 미디어 콘텐츠 결과물 시각화 카드 스타일 */
+    .content-preview-card {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border: 2px solid #22d3ee;
+        border-radius: 20px;
+        padding: 30px;
+        margin-top: 25px;
+        box-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
+    }
+    
+    .content-slide {
+        background-color: #080c14;
+        border: 1px solid #334155;
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 15px;
     }
 
-    /* 타이틀 및 헤더 요소 폰트 가독성 보장 */
     h1, h2, h3, h4, label {
         font-family: 'Noto Serif KR', serif !important;
     }
@@ -117,7 +120,7 @@ st.markdown("""
 # 2. 헤더 섹션
 # ---------------------------------------------------------
 st.markdown('<div class="hero-title">FrameLens</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-subtitle">트렌드 뉴스를 최신순으로 탐색하고, 세련된 미디어 콘텐츠 기획안으로 재구성하세요.</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-subtitle">트렌드 뉴스를 최신순으로 탐색하고, 세련된 미디어 콘텐츠로 직접 구현하세요.</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 3. API 설정 및 세션 상태 초기화
@@ -160,37 +163,57 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# Gemini 기획안 생성 함수 (표준 모델명 gemini-2.5-flash 적용)
-def generate_content_plan(selected_title, content_format, api_key):
+# Gemini를 통해 실제 미디어 콘텐츠 결과물(카드뉴스 슬라이드 등)을 생성하는 함수
+def generate_actual_media_content(selected_title, selected_desc, content_format, api_key):
     try:
         client = genai.Client(api_key=api_key)
         prompt = f"""
-        당신은 창의적인 미디어 콘텐츠 프로듀서이자 스토리텔러입니다.
-        다음 뉴스 기사 제목을 바탕으로 선택된 미디어 형식에 맞춘 구체적인 콘텐츠 기획안을 작성해주세요.
+        당신은 프로페셔널한 미디어 콘텐츠 크리에이터입니다.
+        아래 뉴스 기사를 바탕으로 사용자가 선택한 미디어 형식에 맞는 **실제 콘텐츠 텍스트 및 카드별 구성 내용**을 작성해주세요.
 
-        - 뉴스 기사 제목: {selected_title}
-        - 타겟 콘텐츠 형식: {content_format} (인스타그램 카드뉴스, 공익 캠페인 포스터, 미니북, 만화 중 하나)
+        - 뉴스 제목: {selected_title}
+        - 뉴스 내용 요약: {selected_desc}
+        - 콘텐츠 형식: {content_format} (인스타그램 카드뉴스, 공익 캠페인 포스터, 미니북, 만화 중 하나)
 
-        반드시 아래 마크다운 구조에 맞춰서 알차게 작성해줘:
-        ### 1. 기획 의도 및 핵심 메시지
-        ### 2. 타깃 독자층
-        ### 3. 형식별 전달 방식 및 레이아웃/장면 구성안 (선택한 {content_format} 형식의 구체적 컷/페이지/디자인 연출 묘사)
-        ### 4. 매체 특성에 따른 메시지 표현 차별점 (이 형식이 왜 효과적인지)
-        ### 5. 추가 취재 또는 연출 팁 제안
+        반드시 아래 JSON 형태나 명확한 슬라이드 형식으로 각 장(또는 컷)별 들어갈 **[핵심 문구(Title)]**와 **[상세 내용/시각 연출 묘사(Body)]**를 총 4장(슬라이드/컷) 분량으로 작성해줘. 다른 군더더기 인사말은 넣지 말고 결과물 내용만 출력해줘.
+
+        출력 예시 형식:
+        [슬라이드 1]
+        제목: ...
+        본문: ...
+
+        [슬라이드 2]
+        제목: ...
+        본문: ...
+
+        [슬라이드 3]
+        제목: ...
+        본문: ...
+
+        [슬라이드 4]
+        제목: ...
+        본문: ...
         """
         
-        # 지원되는 안정적인 최신 플래시 모델 호출
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
-        if response and response.text:
-            return response.text
-        else:
-            return "❌ AI로부터 응답을 받지 못했습니다."
+        candidate_models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash']
+        last_err = ""
+        
+        for model_name in candidate_models:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
+                if response and response.text:
+                    return response.text
+            except Exception as e:
+                last_err = str(e)
+                continue
+                
+        return f"❌ 콘텐츠 생성 실패: {last_err}"
             
     except Exception as err:
-        return f"❌ 기획안 생성 중 오류가 발생했습니다: {str(err)}"
+        return f"❌ API 연결 오류: {str(err)}"
 
 # ---------------------------------------------------------
 # 4. 시안 네온 검색 바 UI
@@ -216,7 +239,7 @@ if search_btn or 'news_pool' not in st.session_state:
             st.session_state['page_number'] = 1
 
 # ---------------------------------------------------------
-# 5. 2컬럼 레이아웃 (왼쪽: 뉴스목록, 오른쪽: 형식선택 & 리포트)
+# 5. 2컬럼 레이아웃 (왼쪽: 뉴스목록, 오른쪽: 형식선택 & 실제 콘텐츠 출력)
 # ---------------------------------------------------------
 if 'news_pool' in st.session_state and st.session_state['news_pool']:
     all_news = st.session_state['news_pool']
@@ -271,7 +294,7 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
                     st.rerun()
 
     # -----------------------------------------------------
-    # [오른쪽 컬럼] 변환할 미디어 형식 선택 & AI 리포트 출력
+    # [오른쪽 컬럼] 미디어 형식 선택 & 실제 완성된 콘텐츠 출력
     # -----------------------------------------------------
     with right_col:
         st.markdown("### 기획할 미디어 콘텐츠 유형 선택")
@@ -287,7 +310,7 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
             label_visibility="collapsed"
         )
 
-        submit_plan = st.button("AI 미디어 콘텐츠 기획안 생성하기", use_container_width=True)
+        submit_plan = st.button("AI 미디어 콘텐츠 생성하기", use_container_width=True)
 
         if submit_plan:
             if not gemini_key:
@@ -296,20 +319,28 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
                 st.warning("⚠️ 선택된 뉴스 기사 정보를 찾을 수 없습니다.")
             else:
                 selected_article = article_options[selected_label]
-                with st.spinner("AI 기획안을 작성하고 있습니다..."):
-                    plan_result = generate_content_plan(selected_article['title'], content_format, gemini_key)
+                with st.spinner(f"'{content_format}' 형식의 미디어 콘텐츠를 제작하고 있습니다..."):
+                    content_result = generate_actual_media_content(
+                        selected_article['title'], 
+                        selected_article['desc'], 
+                        content_format, 
+                        gemini_key
+                    )
                     st.session_state['selected_article'] = selected_article
                     st.session_state['content_format'] = content_format
-                    st.session_state['plan_result'] = plan_result
+                    st.session_state['content_result'] = content_result
 
-        if 'plan_result' in st.session_state and st.session_state['plan_result']:
-            st.markdown('<div class="right-card-box" style="border-color: #22d3ee; box-shadow: 0 0 15px rgba(34, 211, 238, 0.2); margin-top: 25px;">', unsafe_allow_html=True)
-            st.markdown("### AI 미디어 콘텐츠 기획 리포트")
+        # 생성된 실제 미디어 콘텐츠 카드 형태로 시각화 출력
+        if 'content_result' in st.session_state and st.session_state['content_result']:
+            st.markdown('<div class="content-preview-card">', unsafe_allow_html=True)
+            st.markdown(f"### 🎬 AI 제작된 [{st.session_state['content_format']}] 결과물")
             
             art = st.session_state['selected_article']
             link_url = art['link']
-            st.info(f"선택한 뉴스: {art['title']} | {art['date']}\n\n[원문 기사 보기]({link_url})")
-            st.markdown(f"변환 형식: `{st.session_state['content_format']}`")
+            st.info(f"기반 뉴스: {art['title']}\n\n[원문 기사 보러가기]({link_url})")
             st.markdown("---")
-            st.markdown(st.session_state['plan_result'])
+            
+            # AI가 만들어준 콘텐츠 내용을 시각적 카드 슬라이드 박스로 렌더링
+            st.markdown(st.session_state['content_result'])
+            
             st.markdown('</div>', unsafe_allow_html=True)
