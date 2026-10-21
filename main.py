@@ -97,7 +97,7 @@ st.markdown("""
         background-color: #0d1527;
         border: 1px solid #1e293b;
         border-radius: 16px;
-        padding: 20px;
+        padding: 24px;
         margin-bottom: 20px;
     }
 
@@ -203,7 +203,6 @@ with search_col2:
     search_btn = st.button("검색", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# 잘렸던 if문 구문 완전 복구
 if search_btn or 'news_pool' not in st.session_state:
     if client_id and client_secret:
         with st.spinner("최신 뉴스를 불러오는 중..."):
@@ -275,8 +274,8 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
     # [오른쪽 컬럼] 변환할 미디어 형식 선택 & AI 리포트 출력
     # -----------------------------------------------------
     with right_col:
-        st.markdown('<div class="right-card-box">', unsafe_allow_html=True)
-        st.markdown("### 변환할 미디어 콘텐츠 형식 선택")
+        # 비어 있던 카드 상자 껍데기 잔상 제거 및 내부로 제목 통합[cite: 12]
+        st.markdown("### 기획할 미디어 콘텐츠 유형 선택")
         
         content_format = st.selectbox(
             "형식 선택",
@@ -290,23 +289,10 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
         )
 
         submit_plan = st.button("AI 미디어 콘텐츠 기획안 생성하기", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        if submit_plan:
-            if not gemini_key:
-                st.error("❌ Gemini API 키를 입력해 주세요.")
-            else:
-                selected_article = article_options[selected_label]
-                st.session_state['selected_article'] = selected_article
-                st.session_state['content_format'] = content_format
-                
-                with st.spinner(f"'{content_format}' 형식의 미디어 기획안을 작성하는 중..."):
-                    plan_result = generate_content_plan(selected_article['title'], content_format, gemini_key)
-                    st.session_state['plan_result'] = plan_result
 
         # AI 기획안 결과 출력 섹션 (오른쪽 하단 카드)
         if 'plan_result' in st.session_state:
-            st.markdown('<div class="right-card-box" style="border-color: #22d3ee; box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);">', unsafe_allow_html=True)
+            st.markdown('<div class="right-card-box" style="border-color: #22d3ee; box-shadow: 0 0 15px rgba(34, 211, 238, 0.2); margin-top: 25px;">', unsafe_allow_html=True)
             st.markdown("### AI 미디어 콘텐츠 기획 리포트")
             
             art = st.session_state['selected_article']
