@@ -136,7 +136,7 @@ def parse_pub_date(pub_date_str):
     except Exception:
         return pub_date_str
 
-# urllib를 이용한 네이버 뉴스 수집 함수
+# 네이버 뉴스 수집 함수
 def fetch_naver_news(query, display_count=100):
     search_term = query.strip() if query and query.strip() else "뉴스"
     encText = urllib.parse.quote(search_term)
@@ -148,65 +148,70 @@ def fetch_naver_news(query, display_count=100):
     
     try:
         with urllib.request.urlopen(req) as response:
-            res_code = response.getcode()
-            if res_code == 200:
+            if response.getcode() == 200:
                 data = json.loads(response.read().decode('utf-8'))
                 return data.get('items', [])
         return []
     except Exception:
         return []
 
-# 표준 urllib 기반 Gemini REST API 콘텐츠 생성 함수 (오류 원천 차단)
+# 다중 모델 자동 호출을 통한 Gemini AI 콘텐츠 생성 함수
 def generate_actual_media_content(selected_title, selected_desc, content_format, api_key):
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        
-        prompt = f"""
-        당신은 프로페셔널한 미디어 콘텐츠 크리에이터입니다.
-        아래 뉴스 기사를 바탕으로 사용자가 선택한 미디어 형식에 맞는 **실제 콘텐츠 텍스트 및 카드별 구성 내용**을 작성해주세요.
+    # 시도해볼 Gemini 모델 리스트 순서
+    candidate_models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+    
+    prompt = f"""
+    당신은 미디어 콘텐츠 전문 에디터입니다.
+    다음 뉴스 기사를 바탕으로 '{content_format}' 형식에 맞는 실질적인 AI 콘텐츠 내용(카피, 장면 구성, 주요 텍스트)을 제작해주세요.
 
-        - 뉴스 제목: {selected_title}
-        - 뉴스 내용 요약: {selected_desc}
-        - 콘텐츠 형식: {content_format} (인스타그램 카드뉴스, 공익 캠페인 포스터, 미니북, 만화 중 하나)
+    - 뉴스 제목: {selected_title}
+    - 뉴스 요약: {selected_desc}
+    - 콘텐츠 형식: {content_format}
 
-        반드시 명확한 슬라이드 형식으로 각 장(또는 컷)별 들어갈 **[핵심 문구(Title)]**와 **[상세 내용/시각 연출 묘사(Body)]**를 총 4장(슬라이드/컷) 분량으로 작성해줘. 다른 군더더기 인사말은 넣지 말고 결과물 내용만 출력해줘.
+    구체적으로 선택한 형식({content_format})의 특성을 살려 4개의 카드/컷/페이지로 나누어 작성해줘:
+    
+    [1장 / 1컷]
+    - 메인 헤드카피:
+    - 그래픽/시각 연출 묘사:
+    - 본문/대사 내용:
 
-        출력 형식 예시:
-        [슬라이드 1]
-        제목: ...
-        본문: ...
+    [2장 / 2컷]
+    - 메인 헤드카피:
+    - 그래픽/시각 연출 묘사:
+    - 본문/대사 내용:
 
-        [슬라이드 2]
-        제목: ...
-        본문: ...
+    [3장 / 3컷]
+    - 메인 헤드카피:
+    - 그래픽/시각 연출 묘사:
+    - 본문/대사 내용:
 
-        [슬라이드 3]
-        제목: ...
-        본문: ...
+    [4장 / 4컷]
+    - 메인 헤드카피:
+    - 그래픽/시각 연출 묘사:
+    - 본문/대사 내용:
+    """
 
-        [슬라이드 4]
-        제목: ...
-        본문: ...
-        """
-        
-        payload = {
-            "contents": [{
-                "parts": [{"text": prompt}]
-            }]
-        }
-        
-        data = json.dumps(payload).encode('utf-8')
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+    data = json.dumps(payload).encode('utf-8')
+    last_err_msg = ""
+
+    for model_name in candidate_models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
         req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
-        
-        with urllib.request.urlopen(req) as response:
-            if response.getcode() == 200:
-                res_json = json.loads(response.read().decode('utf-8'))
-                return res_json['candidates'][0]['content']['parts'][0]['text']
-        
-        return "❌ AI 응답을 받아오지 못했습니다."
-            
-    except Exception as err:
-        return f"❌ 오류 발생: {str(err)}"
+        try:
+            with urllib.request.urlopen(req) as response:
+                if response.getcode() == 200:
+                    res_json = json.loads(response.read().decode('utf-8'))
+                    return res_json['candidates'][0]['content']['parts'][0]['text']
+        except Exception as err:
+            last_err_msg = str(err)
+            continue
+
+    return f"❌ AI 콘텐츠 생성 실패 (오류 상세: {last_err_msg})\n\n💡 API 키가 정확히 입력되었는지 확인해주세요."
 
 # ---------------------------------------------------------
 # 4. 시안 네온 검색 바 UI
@@ -329,7 +334,7 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
             
             art = st.session_state['selected_article']
             link_url = art['link']
-            st.info(f"기반 뉴스: {art['title']}\n\n[원문 기사 보러가기]({link_url})")
+            st.markdown(f"**원본 기사**: [{art['title']}]({link_url})")
             st.markdown("---")
             st.markdown(st.session_state['content_result'])
             st.markdown('</div>', unsafe_allow_html=True)
