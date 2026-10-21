@@ -1,9 +1,8 @@
 import streamlit as st
-import requests
+import urllib.request
+import urllib.parse
 import json
-import pandas as pd
 from datetime import datetime
-import google.generativeai as genai
 
 # ---------------------------------------------------------
 # 1. 페이지 기본 설정 및 우아한 세리프 폰트 UI 스타일링
@@ -137,27 +136,30 @@ def parse_pub_date(pub_date_str):
     except Exception:
         return pub_date_str
 
-# 네이버 뉴스 수집 함수
+# urllib를 이용한 네이버 뉴스 수집 함수
 def fetch_naver_news(query, display_count=100):
     search_term = query.strip() if query and query.strip() else "뉴스"
-    url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={search_term}&display={display_count}&sort=date"
-    headers = {
-        "X-NCP-APIGW-API-KEY-ID": client_id,
-        "X-NCP-APIGW-API-KEY": client_secret
-    }
+    encText = urllib.parse.quote(search_term)
+    url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={encText}&display={display_count}&sort=date"
+    
+    req = urllib.request.Request(url)
+    req.add_header("X-NCP-APIGW-API-KEY-ID", client_id)
+    req.add_header("X-NCP-APIGW-API-KEY", client_secret)
+    
     try:
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            return response.json().get('items', [])
-        else:
-            return []
+        with urllib.request.urlopen(req) as response:
+            res_code = response.getcode()
+            if res_code == 200:
+                data = json.loads(response.read().decode('utf-8'))
+                return data.get('items', [])
+        return []
     except Exception:
         return []
 
-# 안정적인 genai 표준 방식으로 미디어 콘텐츠 생성
+# 표준 urllib 기반 Gemini REST API 콘텐츠 생성 함수 (오류 원천 차단)
 def generate_actual_media_content(selected_title, selected_desc, content_format, api_key):
     try:
-        genai.configure(api_key=api_key)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         
         prompt = f"""
         당신은 프로페셔널한 미디어 콘텐츠 크리에이터입니다.
@@ -187,17 +189,24 @@ def generate_actual_media_content(selected_title, selected_desc, content_format,
         본문: ...
         """
         
-        # 가장 범용적으로 안정적인 플래시 모델 사용
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }]
+        }
         
-        if response and response.text:
-            return response.text
-        else:
-            return "❌ AI로부터 응답을 받지 못했습니다."
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+        
+        with urllib.request.urlopen(req) as response:
+            if response.getcode() == 200:
+                res_json = json.loads(response.read().decode('utf-8'))
+                return res_json['candidates'][0]['content']['parts'][0]['text']
+        
+        return "❌ AI 응답을 받아오지 못했습니다."
             
     except Exception as err:
-        return f"❌ 기획안 생성 중 오류 발생: {str(err)}"
+        return f"❌ 오류 발생: {str(err)}"
 
 # ---------------------------------------------------------
 # 4. 시안 네온 검색 바 UI
