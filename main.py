@@ -92,7 +92,7 @@ st.markdown("""
         transform: translateY(-1px);
     }
 
-    /* 오른쪽 카드 박스 스타일링 (3번째 이미지 구성안) */
+    /* 오른쪽 카드 박스 스타일링 */
     .right-card-box {
         background-color: #0d1527;
         border: 1px solid #1e293b;
@@ -203,4 +203,116 @@ with search_col2:
     search_btn = st.button("검색", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-if search_btn or 'news_pool' not in st
+# 잘렸던 if문 구문 완전 복구
+if search_btn or 'news_pool' not in st.session_state:
+    if client_id and client_secret:
+        with st.spinner("최신 뉴스를 불러오는 중..."):
+            st.session_state['news_pool'] = fetch_naver_news(search_query)
+            st.session_state['last_query'] = search_query
+            st.session_state['page_number'] = 1
+
+# ---------------------------------------------------------
+# 5. 2컬럼 레이아웃 (왼쪽: 뉴스목록, 오른쪽: 형식선택 & 리포트)
+# ---------------------------------------------------------
+if 'news_pool' in st.session_state and st.session_state['news_pool']:
+    all_news = st.session_state['news_pool']
+    total_news_count = len(all_news)
+    
+    # 페이징 계산 (페이지당 10개)
+    items_per_page = 10
+    total_pages = max(1, (total_news_count + items_per_page - 1) // items_per_page)
+    
+    current_page = st.session_state['page_number']
+    start_idx = (current_page - 1) * items_per_page
+    end_idx = start_idx + items_per_page
+    current_news_batch = all_news[start_idx:end_idx]
+
+    # 좌우 컬럼 나누기
+    left_col, right_col = st.columns([1.2, 1])
+
+    # -----------------------------------------------------
+    # [왼쪽 컬럼] 최신 뉴스 라인업 & 페이지 네이션
+    # -----------------------------------------------------
+    with left_col:
+        st.markdown(f"### '{st.session_state.get('last_query', '')}' 최신 뉴스 검색 결과 ({total_news_count}건)")
+        st.caption(f"최신순으로 정렬된 기사 목록입니다. (페이지 {current_page} / {total_pages})")
+
+        # 기사 목록 구성
+        article_options = {}
+        for idx, item in enumerate(current_news_batch):
+            clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+            clean_desc = item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+            link = item.get('originallink', item.get('link', '#'))
+            pub_date = parse_pub_date(item.get('pubDate', ''))
+            
+            label = f"[{pub_date}] {clean_title}"
+            article_options[label] = {"title": clean_title, "link": link, "desc": clean_desc, "date": pub_date}
+
+        # 라디오 버튼으로 선택
+        selected_label = st.radio(
+            "기사 선택",
+            options=list(article_options.keys()),
+            key=f"radio_page_{current_page}",
+            label_visibility="collapsed"
+        )
+
+        # 페이지 이동 버튼 영역
+        p_col1, p_col2, p_col3 = st.columns([1, 2, 1])
+        with p_col1:
+            if current_page > 1:
+                if st.button("◀ 이전 페이지", use_container_width=True):
+                    st.session_state['page_number'] -= 1
+                    st.rerun()
+        with p_col2:
+            st.markdown(f"<div style='text-align: center; padding-top: 10px; color: #94a3b8;'>{current_page} / {total_pages} Page</div>", unsafe_allow_html=True)
+        with p_col3:
+            if current_page < total_pages:
+                if st.button("다음 페이지 ▶", use_container_width=True):
+                    st.session_state['page_number'] += 1
+                    st.rerun()
+
+    # -----------------------------------------------------
+    # [오른쪽 컬럼] 변환할 미디어 형식 선택 & AI 리포트 출력
+    # -----------------------------------------------------
+    with right_col:
+        st.markdown('<div class="right-card-box">', unsafe_allow_html=True)
+        st.markdown("### 변환할 미디어 콘텐츠 형식 선택")
+        
+        content_format = st.selectbox(
+            "형식 선택",
+            [
+                "인스타그램 카드뉴스",
+                "공익 캠페인 포스터",
+                "미니북",
+                "만화 (컷툰/웹툰)"
+            ],
+            label_visibility="collapsed"
+        )
+
+        submit_plan = st.button("AI 미디어 콘텐츠 기획안 생성하기", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        if submit_plan:
+            if not gemini_key:
+                st.error("❌ Gemini API 키를 입력해 주세요.")
+            else:
+                selected_article = article_options[selected_label]
+                st.session_state['selected_article'] = selected_article
+                st.session_state['content_format'] = content_format
+                
+                with st.spinner(f"'{content_format}' 형식의 미디어 기획안을 작성하는 중..."):
+                    plan_result = generate_content_plan(selected_article['title'], content_format, gemini_key)
+                    st.session_state['plan_result'] = plan_result
+
+        # AI 기획안 결과 출력 섹션 (오른쪽 하단 카드)
+        if 'plan_result' in st.session_state:
+            st.markdown('<div class="right-card-box" style="border-color: #22d3ee; box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);">', unsafe_allow_html=True)
+            st.markdown("### AI 미디어 콘텐츠 기획 리포트")
+            
+            art = st.session_state['selected_article']
+            link_url = art['link']
+            st.info(f"선택한 뉴스: {art['title']} | {art['date']}\n\n[원문 기사 보기]({link_url})")
+            st.markdown(f"변환 형식: `{st.session_state['content_format']}`")
+            st.markdown("---")
+            st.markdown(st.session_state['plan_result'])
+            st.markdown('</div>', unsafe_allow_html=True)
