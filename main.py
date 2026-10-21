@@ -29,7 +29,6 @@ st.markdown("""
         font-family: 'Noto Serif KR', serif !important;
     }
     
-    /* 포털 헤더 타이틀 */
     .hero-title {
         font-family: 'Noto Serif KR', serif !important;
         font-size: 3.5rem;
@@ -49,7 +48,6 @@ st.markdown("""
         font-weight: 300;
     }
 
-    /* 대형 시안 네온 검색창 박스 */
     .search-container {
         background: #0d1527;
         border: 2px solid #22d3ee;
@@ -71,7 +69,6 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* 커스텀 버튼 스타일링 */
     .stButton > button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: #ffffff;
@@ -98,6 +95,15 @@ st.markdown("""
         margin-bottom: 20px;
     }
 
+    .content-preview-card {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border: 2px solid #22d3ee;
+        border-radius: 20px;
+        padding: 30px;
+        margin-top: 25px;
+        box-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
+    }
+
     h1, h2, h3, h4, label {
         font-family: 'Noto Serif KR', serif !important;
     }
@@ -110,7 +116,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. 세션 상태 초기화 (단계 관리: 'search' vs 'result')
+# 2. 세션 상태 초기화
 # ---------------------------------------------------------
 if 'step' not in st.session_state:
     st.session_state['step'] = 'search'
@@ -155,6 +161,59 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
+# Gemini AI 콘텐츠 생성 함수 (gemini-1.5-flash 표준 엔드포인트 적용)
+def generate_actual_media_content(selected_title, selected_desc, content_format, api_key):
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    
+    prompt = f"""
+    당신은 프로페셔널한 미디어 콘텐츠 크리에이터입니다.
+    아래 뉴스 기사를 바탕으로 사용자가 선택한 미디어 형식에 맞는 **실제 콘텐츠 내용 및 카드별 구성**을 작성해주세요.
+
+    - 뉴스 제목: {selected_title}
+    - 뉴스 요약: {selected_desc}
+    - 콘텐츠 형식: {content_format}
+
+    선택한 형식({content_format})의 특성을 살려 4개의 카드/컷/페이지로 나누어 구체적인 문구와 연출을 작성해줘:
+    
+    [1장 / 1컷]
+    - 메인 헤드카피:
+    - 시각 연출 및 디자인 묘사:
+    - 본문 내용:
+
+    [2장 / 2컷]
+    - 메인 헤드카피:
+    - 시각 연출 및 디자인 묘사:
+    - 본문 내용:
+
+    [3장 / 3컷]
+    - 메인 헤드카피:
+    - 시각 연출 및 디자인 묘사:
+    - 본문 내용:
+
+    [4장 / 4컷]
+    - 메인 헤드카피:
+    - 시각 연출 및 디자인 묘사:
+    - 본문 내용:
+    """
+
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+    
+    data = json.dumps(payload).encode('utf-8')
+    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            if response.getcode() == 200:
+                res_json = json.loads(response.read().decode('utf-8'))
+                return res_json['candidates'][0]['content']['parts'][0]['text']
+        return "❌ AI 응답을 받아오지 못했습니다."
+    except Exception as err:
+        return f"❌ 오류 발생: {str(err)}"
+
 # ---------------------------------------------------------
 # 화면 1: 초기 검색 창만 심플하게 뜨는 메인 홈
 # ---------------------------------------------------------
@@ -176,7 +235,6 @@ if st.session_state['step'] == 'search':
         search_trigger = st.button("검색", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 검색 버튼 클릭 시 뉴스 데이터 로드 후 화면 2(result)로 전환
     if search_trigger:
         if not keyword_input.strip():
             st.warning("⚠️ 검색어를 입력해주세요!")
@@ -193,7 +251,6 @@ if st.session_state['step'] == 'search':
 # 화면 2: 뉴스 기사 선택 및 AI 콘텐츠 생성 화면
 # ---------------------------------------------------------
 elif st.session_state['step'] == 'result':
-    # 상단 헤더 & 다시 검색하기 버튼
     top_col1, top_col2 = st.columns([4, 1])
     with top_col1:
         st.markdown(f"## FrameLens | '{st.session_state.get('last_query', '')}' 뉴스 탐색")
@@ -242,7 +299,6 @@ elif st.session_state['step'] == 'result':
                 label_visibility="collapsed"
             )
 
-            # 페이지 네이션
             p_col1, p_col2, p_col3 = st.columns([1, 2, 1])
             with p_col1:
                 if current_page > 1:
@@ -257,7 +313,7 @@ elif st.session_state['step'] == 'result':
                         st.session_state['page_number'] += 1
                         st.rerun()
 
-        # [오른쪽 컬럼] 미디어 콘텐츠 형식 선택 섹션
+        # [오른쪽 컬럼] 미디어 형식 선택 및 AI 콘텐츠 생성
         with right_col:
             st.markdown("### 기획할 미디어 콘텐츠 유형 선택")
             
@@ -284,4 +340,31 @@ elif st.session_state['step'] == 'result':
             submit_plan = st.button("AI 미디어 콘텐츠 생성하기", use_container_width=True)
 
             if submit_plan:
-                st.info("💡 AI 기획안 생성 기능이 실행됩니다.")
+                if not gemini_key:
+                    st.error("❌ 사이드바에 Gemini API Key를 입력해 주세요!")
+                elif selected_label not in article_options:
+                    st.warning("⚠️ 선택된 뉴스 기사 정보를 찾을 수 없습니다.")
+                else:
+                    selected_article = article_options[selected_label]
+                    
+                    # Streamlit 기본 로딩 스피너와 예상 소요 시간 안내 적용 (두 번째 사진의 회전 아이콘 효과)
+                    with st.spinner("⏳ AI가 선택된 형식을 바탕으로 미디어 콘텐츠를 제작하고 있습니다... (예상 소요 시간: 약 3~5초)"):
+                        content_result = generate_actual_media_content(
+                            selected_article['title'], 
+                            selected_article['desc'], 
+                            content_format, 
+                            gemini_key
+                        )
+                        st.session_state['selected_article'] = selected_article
+                        st.session_state['content_format'] = content_format
+                        st.session_state['content_result'] = content_result
+
+            # 생성된 결과가 있으면 하단에 멋진 카드 형태로 렌더링
+            if 'content_result' in st.session_state and st.session_state['content_result']:
+                st.markdown('<div class="content-preview-card">', unsafe_allow_html=True)
+                st.markdown(f"### 🎬 AI 제작된 [{st.session_state['content_format']}] 결과물")
+                art = st.session_state['selected_article']
+                st.markdown(f"**기반 뉴스**: [{art['title']}]({art['link']})")
+                st.markdown("---")
+                st.markdown(st.session_state['content_result'])
+                st.markdown('</div>', unsafe_allow_html=True)
