@@ -3,7 +3,7 @@ import requests
 import json
 import pandas as pd
 from datetime import datetime
-from google import genai
+import google.generativeai as genai
 
 # ---------------------------------------------------------
 # 1. 페이지 기본 설정 및 우아한 세리프 폰트 UI 스타일링
@@ -87,7 +87,6 @@ st.markdown("""
         transform: translateY(-1px);
     }
 
-    /* 실제 미디어 콘텐츠 결과물 시각화 카드 스타일 */
     .content-preview-card {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         border: 2px solid #22d3ee;
@@ -95,14 +94,6 @@ st.markdown("""
         padding: 30px;
         margin-top: 25px;
         box-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
-    }
-    
-    .content-slide {
-        background-color: #080c14;
-        border: 1px solid #334155;
-        border-radius: 14px;
-        padding: 20px;
-        margin-bottom: 15px;
     }
 
     h1, h2, h3, h4, label {
@@ -163,10 +154,11 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# Gemini를 통해 실제 미디어 콘텐츠 결과물(카드뉴스 슬라이드 등)을 생성하는 함수
+# 안정적인 genai 표준 방식으로 미디어 콘텐츠 생성
 def generate_actual_media_content(selected_title, selected_desc, content_format, api_key):
     try:
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
+        
         prompt = f"""
         당신은 프로페셔널한 미디어 콘텐츠 크리에이터입니다.
         아래 뉴스 기사를 바탕으로 사용자가 선택한 미디어 형식에 맞는 **실제 콘텐츠 텍스트 및 카드별 구성 내용**을 작성해주세요.
@@ -175,9 +167,9 @@ def generate_actual_media_content(selected_title, selected_desc, content_format,
         - 뉴스 내용 요약: {selected_desc}
         - 콘텐츠 형식: {content_format} (인스타그램 카드뉴스, 공익 캠페인 포스터, 미니북, 만화 중 하나)
 
-        반드시 아래 JSON 형태나 명확한 슬라이드 형식으로 각 장(또는 컷)별 들어갈 **[핵심 문구(Title)]**와 **[상세 내용/시각 연출 묘사(Body)]**를 총 4장(슬라이드/컷) 분량으로 작성해줘. 다른 군더더기 인사말은 넣지 말고 결과물 내용만 출력해줘.
+        반드시 명확한 슬라이드 형식으로 각 장(또는 컷)별 들어갈 **[핵심 문구(Title)]**와 **[상세 내용/시각 연출 묘사(Body)]**를 총 4장(슬라이드/컷) 분량으로 작성해줘. 다른 군더더기 인사말은 넣지 말고 결과물 내용만 출력해줘.
 
-        출력 예시 형식:
+        출력 형식 예시:
         [슬라이드 1]
         제목: ...
         본문: ...
@@ -195,25 +187,17 @@ def generate_actual_media_content(selected_title, selected_desc, content_format,
         본문: ...
         """
         
-        candidate_models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash']
-        last_err = ""
+        # 가장 범용적으로 안정적인 플래시 모델 사용
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
         
-        for model_name in candidate_models:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt
-                )
-                if response and response.text:
-                    return response.text
-            except Exception as e:
-                last_err = str(e)
-                continue
-                
-        return f"❌ 콘텐츠 생성 실패: {last_err}"
+        if response and response.text:
+            return response.text
+        else:
+            return "❌ AI로부터 응답을 받지 못했습니다."
             
     except Exception as err:
-        return f"❌ API 연결 오류: {str(err)}"
+        return f"❌ 기획안 생성 중 오류 발생: {str(err)}"
 
 # ---------------------------------------------------------
 # 4. 시안 네온 검색 바 UI
@@ -330,7 +314,6 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
                     st.session_state['content_format'] = content_format
                     st.session_state['content_result'] = content_result
 
-        # 생성된 실제 미디어 콘텐츠 카드 형태로 시각화 출력
         if 'content_result' in st.session_state and st.session_state['content_result']:
             st.markdown('<div class="content-preview-card">', unsafe_allow_html=True)
             st.markdown(f"### 🎬 AI 제작된 [{st.session_state['content_format']}] 결과물")
@@ -339,8 +322,5 @@ if 'news_pool' in st.session_state and st.session_state['news_pool']:
             link_url = art['link']
             st.info(f"기반 뉴스: {art['title']}\n\n[원문 기사 보러가기]({link_url})")
             st.markdown("---")
-            
-            # AI가 만들어준 콘텐츠 내용을 시각적 카드 슬라이드 박스로 렌더링
             st.markdown(st.session_state['content_result'])
-            
             st.markdown('</div>', unsafe_allow_html=True)
