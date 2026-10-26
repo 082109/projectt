@@ -70,7 +70,7 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    .stButton > button {
+    .stButton > button, div[data-testid="stFormSubmitButton"] > button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: #ffffff;
         border: none;
@@ -81,8 +81,9 @@ st.markdown("""
         box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
         transition: all 0.2s ease;
         font-family: 'Noto Serif KR', serif !important;
+        width: 100%;
     }
-    .stButton > button:hover {
+    .stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
         background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
         box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
         transform: translateY(-1px);
@@ -162,7 +163,7 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# Gemini AI를 통해 뉴스 기사 맞춤형 텍스트 콘텐츠 생성
+# Gemini AI를 통한 뉴스 기사 맞춤형 텍스트 콘텐츠 생성
 def generate_ai_content_text(title, desc, content_format, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     
@@ -227,11 +228,9 @@ def create_media_content_image(content_format, ai_text_result):
         font_body = ImageFont.load_default()
         font_badge = ImageFont.load_default()
 
-    # 테두리 및 뱃지
     draw.rectangle([25, 25, img_width - 25, img_height - 25], outline=accent_color, width=3)
     draw.text((50, 50), badge_text, fill=accent_color, font=font_badge)
 
-    # AI가 생성한 텍스트 파싱
     headcopy = "AI 미디어 콘텐츠 기획"
     bodytext = ai_text_result
     for line in ai_text_result.split("\n"):
@@ -240,7 +239,6 @@ def create_media_content_image(content_format, ai_text_result):
         elif "본문요약:" in line:
             bodytext = line.replace("본문요약:", "").strip()
 
-    # 화면에 렌더링
     margin = 50
     max_width = img_width - 100
     y_text = 100
@@ -248,7 +246,6 @@ def create_media_content_image(content_format, ai_text_result):
     draw.text((margin, y_text), "📌 [핵심 헤드카피]", fill=accent_color, font=font_badge)
     y_text += 30
 
-    # 헤드카피 줄바꿈 출력
     words = headcopy.split()
     line = ""
     for word in words:
@@ -263,14 +260,12 @@ def create_media_content_image(content_format, ai_text_result):
         draw.text((margin, y_text), line, fill=(255, 255, 255), font=font_title)
         y_text += 60
 
-    # 구분선
     draw.line([(margin, y_text), (img_width - 50, y_text)], fill=(71, 85, 105), width=2)
     y_text += 40
 
     draw.text((margin, y_text), "📝 [뉴스 상세 요약 및 연출]", fill=accent_color, font=font_badge)
     y_text += 30
 
-    # 본문 줄바꿈 출력
     words = bodytext.split()
     line = ""
     for word in words:
@@ -294,25 +289,27 @@ def create_media_content_image(content_format, ai_text_result):
     return buf
 
 # ---------------------------------------------------------
-# 화면 1: 초기 검색 창만 심플하게 뜨는 메인 홈
+# 화면 1: 초기 검색 창 (st.form을 적용해 엔터 키 입력 시 검색 실행)
 # ---------------------------------------------------------
 if st.session_state['step'] == 'search':
     st.markdown('<div style="height: 60px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens</div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-subtitle">탐색하고 싶은 뉴스 키워드를 입력하고, 맞춤형 미디어 콘텐츠 이미지를 생성해보세요.</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="search-container">', unsafe_allow_html=True)
-    s_col1, s_col2 = st.columns([5, 1])
-    with s_col1:
-        keyword_input = st.text_input(
-            "뉴스 검색어 입력",
-            value="",
-            placeholder="검색어를 입력하세요 (예: 청소년 수면, 기후위기, AI 윤리, 딥페이크)",
-            label_visibility="collapsed"
-        )
-    with s_col2:
-        search_trigger = st.button("검색", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # st.form으로 감싸서 엔터 키만 눌러도 검색이 실행되도록 처리
+    with st.form(key="search_form"):
+        st.markdown('<div class="search-container">', unsafe_allow_html=True)
+        s_col1, s_col2 = st.columns([5, 1])
+        with s_col1:
+            keyword_input = st.text_input(
+                "뉴스 검색어 입력",
+                value="",
+                placeholder="검색어를 입력하세요 (예: 청소년 수면, 기후위기, AI 윤리, 딥페이크)",
+                label_visibility="collapsed"
+            )
+        with s_col2:
+            search_trigger = st.form_submit_button("검색", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if search_trigger:
         if not keyword_input.strip():
@@ -403,6 +400,7 @@ elif st.session_state['step'] == 'result':
                     "공익 캠페인 포스터",
                     "만화 (컷툰/웹툰)"
                 ],
+    
                 label_visibility="collapsed"
             )
 
@@ -419,28 +417,25 @@ elif st.session_state['step'] == 'result':
 
             if submit_plan:
                 if not gemini_key:
-                    st.error("❌ 사이드바에 Gemini API Key를 입력해 주세요!")
+                    st.error("❌ 사이드바에 API Key를 입력해 주세요!")
                 elif selected_label not in article_options:
                     st.warning("⚠️ 선택된 뉴스 기사 정보를 찾을 수 없습니다.")
                 else:
                     selected_article = article_options[selected_label]
                     
                     with st.spinner(f"⏳ AI가 선택된 뉴스 기사를 분석하고 '{content_format}' 맞춤형 이미지를 제작하고 있습니다..."):
-                        # 1. Gemini AI로 뉴스 기사 맞춤형 텍스트 생성
                         ai_text_result = generate_ai_content_text(
                             selected_article['title'], 
                             selected_article['desc'], 
                             content_format, 
                             gemini_key
                         )
-                        # 2. PIL로 해당 텍스트를 담은 맞춤형 이미지 렌더링
                         image_bytes = create_media_content_image(content_format, ai_text_result)
                         
                         st.session_state['selected_article'] = selected_article
                         st.session_state['content_format'] = content_format
                         st.session_state['image_bytes'] = image_bytes
 
-            # 생성된 맞춤형 이미지 결과물 렌더링 및 다운로드
             if 'image_bytes' in st.session_state and st.session_state['image_bytes']:
                 st.markdown('<div class="image-preview-container">', unsafe_allow_html=True)
                 st.markdown(f"### 🎬 [{st.session_state['content_format']}] 맞춤형 이미지 생성 완료")
