@@ -127,7 +127,6 @@ if 'step' not in st.session_state:
 if 'page_number' not in st.session_state:
     st.session_state['page_number'] = 1
 
-# 한글 깨짐 방지를 위한 나눔고딕 폰트 자동 다운로드 함수
 def get_korean_font(font_size=18):
     font_path = "NanumGothic.ttf"
     if not os.path.exists(font_path):
@@ -152,7 +151,6 @@ gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip() or st.sidebar.text_inp
 if not (client_id and client_secret and gemini_key):
     st.info("💡 사이드바에 API 키를 입력하거나 `.streamlit/secrets.toml`에 설정해주세요.")
 
-# 날짜 변환 함수
 def parse_pub_date(pub_date_str):
     if not pub_date_str:
         return "날짜 정보 없음"
@@ -162,7 +160,6 @@ def parse_pub_date(pub_date_str):
     except Exception:
         return pub_date_str
 
-# 네이버 뉴스 수집 함수
 def fetch_naver_news(query, display_count=100):
     search_term = query.strip() if query and query.strip() else "뉴스"
     encText = urllib.parse.quote(search_term)
@@ -181,7 +178,6 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# Gemini AI를 통한 뉴스 기사 맞춤형 텍스트 생성
 def generate_ai_content_text(title, desc, content_format, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     
@@ -216,23 +212,22 @@ def generate_ai_content_text(title, desc, content_format, api_key):
     except Exception:
         return f"헤드카피: {title}\n본문요약: {desc}"
 
-# 기사 맞춤형 텍스트를 PIL 이미지로 렌더링하는 함수 (한글 폰트 적용)
 def create_media_content_image(content_format, ai_text_result, article_title):
-    if content_format == "인스타그램 카드뉴스":
-        img_width, img_height = 800, 800
-        bg_color = (13, 21, 39)
-        accent_color = (34, 211, 238)
-        badge_text = "[ INSTAGRAM CARD NEWS ]"
-    elif content_format == "공익 캠페인 포스터":
-        img_width, img_height = 700, 950
-        bg_color = (15, 23, 42)
-        accent_color = (250, 204, 21)
-        badge_text = "[ PUBLIC CAMPAIGN POSTER ]"
-    else:
+    if content_format == "만화 (컷툰/웹툰)":
         img_width, img_height = 850, 600
         bg_color = (30, 27, 75)
         accent_color = (244, 114, 182)
-        badge_text = "[ WEBTOON / CUTTOON COMIC ]"
+        badge_text = "[ COMIC / CUTTOON FORMAT ]"
+    elif content_format == "포스터":
+        img_width, img_height = 700, 950
+        bg_color = (15, 23, 42)
+        accent_color = (250, 204, 21)
+        badge_text = "[ POSTER FORMAT ]"
+    else: # 인포그래픽
+        img_width, img_height = 800, 850
+        bg_color = (13, 21, 39)
+        accent_color = (34, 211, 238)
+        badge_text = "[ INFOGRAPHIC & DATA ]"
 
     image = Image.new("RGB", (img_width, img_height), color=bg_color)
     draw = ImageDraw.Draw(image)
@@ -241,7 +236,6 @@ def create_media_content_image(content_format, ai_text_result, article_title):
     font_body = get_korean_font(16)
     font_badge = get_korean_font(13)
 
-    # 테두리 및 상단 뱃지
     draw.rectangle([25, 25, img_width - 25, img_height - 25], outline=accent_color, width=3)
     draw.text((45, 45), badge_text, fill=accent_color, font=font_badge)
 
@@ -260,7 +254,6 @@ def create_media_content_image(content_format, ai_text_result, article_title):
     draw.text((margin, y_text), "📌 [핵심 헤드카피]", fill=accent_color, font=font_badge)
     y_text += 25
 
-    # 헤드카피 줄바꿈 렌더링
     words = headcopy.split()
     line = ""
     for word in words:
@@ -275,14 +268,12 @@ def create_media_content_image(content_format, ai_text_result, article_title):
         draw.text((margin, y_text), line, fill=(255, 255, 255), font=font_title)
         y_text += 45
 
-    # 구분선
     draw.line([(margin, y_text), (img_width - 45, y_text)], fill=(71, 85, 105), width=2)
     y_text += 30
 
     draw.text((margin, y_text), "📝 [기사 맞춤형 요약 내용]", fill=accent_color, font=font_badge)
     y_text += 25
 
-    # 본문 줄바꿈 렌더링
     words = bodytext.split()
     line = ""
     for word in words:
@@ -369,7 +360,6 @@ elif st.session_state['step'] == 'result':
 
         left_col, right_col = st.columns([1.2, 1])
 
-        # [왼쪽 컬럼] 뉴스 목록
         with left_col:
             st.markdown(f"### 최신 뉴스 목록 ({total_news_count}건)")
             st.caption(f"최신순 정렬 (페이지 {current_page} / {total_pages})")
@@ -405,16 +395,16 @@ elif st.session_state['step'] == 'result':
                         st.session_state['page_number'] += 1
                         st.rerun()
 
-        # [오른쪽 컬럼] 미디어 형식 선택 및 기사 맞춤형 이미지 생성
         with right_col:
             st.markdown("### 기획할 미디어 콘텐츠 유형 선택")
             
+            # 3가지 핵심 형식 (만화, 포스터, 인포그래픽)
             content_format = st.selectbox(
                 "형식 선택",
                 [
-                    "인스타그램 카드뉴스",
-                    "공익 캠페인 포스터",
-                    "만화 (컷툰/웹툰)"
+                    "만화 (컷툰/웹툰)",
+                    "포스터",
+                    "인포그래픽"
                 ],
                 label_visibility="collapsed"
             )
