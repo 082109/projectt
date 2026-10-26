@@ -198,27 +198,30 @@ def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=6):
     return curr_y
 
 # ---------------------------------------------------------
-# [핵심 1] Gemini로 영문 이미지 프롬프트 + 강렬한 한국어 캐치프레이즈 동시 추출
+# [핵심] Gemini로 고품질 콘텐츠 데이터(일러스트 프롬프트 + 캐치프레이즈) 생성
 # ---------------------------------------------------------
-def generate_ai_content_data(title, desc, content_format, api_key):
+def generate_ai_content_data(title, desc, content_format, user_feedback, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     
     if content_format == "만화 (컷툰/웹툰)":
-        style_desc = "a 4-panel webtoon comic strip with cute characters and speech bubbles"
+        style_desc = "a professional 4-panel webtoon comic strip illustration with expressive characters"
     elif content_format == "포스터":
-        style_desc = "a professional public campaign poster illustration with striking visual symbols"
+        style_desc = "a high quality professional public campaign poster illustration with striking visual symbols"
     else:
-        style_desc = "a clean statistical data infographic design with bar charts and icons"
+        style_desc = "a clean modern statistical data infographic design with bar charts and icons"
+
+    feedback_instruction = f"Additional User Request/Feedback to apply: {user_feedback}" if user_feedback else ""
 
     prompt = f"""
-    Analyze this news article and output strictly in JSON format (no other text):
+    Analyze this news article and create high-quality media content data strictly in JSON format (no other text):
     - News Title: {title}
     - News Summary: {desc}
-    - Format: {style_desc}
+    - Format Style: {style_desc}
+    {feedback_instruction}
 
     JSON structure:
     {{
-      "image_prompt": "Detailed English image generation prompt for AI to draw the visual illustration.",
+      "image_prompt": "Highly detailed, stunning English image generation prompt for AI to draw the visual illustration.",
       "korean_catchphrase": "강렬하고 직관적인 한국어 핵심 한 줄 캐치프레이즈 (공익 포스터/만화풍 문구)"
     }}
     """
@@ -237,19 +240,16 @@ def generate_ai_content_data(title, desc, content_format, api_key):
         pass
 
     return {
-        "image_prompt": f"Professional illustration about {title}, high quality graphic design",
+        "image_prompt": f"Stunning professional illustration about {title}, high quality graphic design",
         "korean_catchphrase": title
     }
 
-# ---------------------------------------------------------
-# [핵심 2] 최종 이미지(AI 일러스트 + 한글 핵심 메시지 합성) 제작 함수
-# ---------------------------------------------------------
-def create_final_media_content(catchphrase, desc, content_format, final_prompt):
-    encoded_prompt = urllib.parse.quote(final_prompt)
-    ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=700&height=550&nologo=true"
+def create_final_media_content(catchphrase, desc, content_format, image_prompt):
+    encoded_prompt = urllib.parse.quote(image_prompt)
+    ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=700&height=550&nologo=true&enhance=true"
     
     try:
-        res = requests.get(ai_image_url, timeout=20)
+        res = requests.get(ai_image_url, timeout=25)
         ai_img = Image.open(io.BytesIO(res.content)).convert("RGB")
     except Exception:
         ai_img = Image.new("RGB", (700, 550), color=(230, 235, 245))
@@ -267,10 +267,7 @@ def create_final_media_content(catchphrase, desc, content_format, final_prompt):
     f_body = get_korean_font(14)
 
     draw.text((40, 580), f"📌 [{content_format.upper()}] 핵심 메시지", fill=(2, 132, 199), font=f_badge)
-    
-    # 한국어 핵심 캐치프레이즈 출력
     draw_wrapped_text(draw, f"\"{catchphrase}\"", f_catch, (15, 23, 42), 40, 620, poster_w - 80, line_spacing=8)
-    
     draw_wrapped_text(draw, desc[:150] + "...", f_body, (100, 116, 139), 40, 770, poster_w - 80)
     draw.text((40, poster_h - 45), "FrameLens AI Media Production Studio", fill=(160, 170, 185), font=f_badge)
     draw.rectangle([0, 0, poster_w - 1, poster_h - 1], outline=(30, 41, 59), width=3)
@@ -286,7 +283,7 @@ def create_final_media_content(catchphrase, desc, content_format, final_prompt):
 if st.session_state['step'] == 'search':
     st.markdown('<div style="height: 60px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens Studio</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-subtitle">뉴스 키워드를 검색하고, 한글 메시지와 AI 일러스트가 어우러진 포스터를 생성해보세요!</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">뉴스 기사를 선택하고 고품질 맞춤형 미디어 콘텐츠를 생성해 보세요!</div>', unsafe_allow_html=True)
 
     with st.form(key="search_form"):
         st.markdown('<div class="search-container">', unsafe_allow_html=True)
@@ -315,7 +312,7 @@ if st.session_state['step'] == 'search':
                 st.rerun()
 
 # ---------------------------------------------------------
-# 화면 2: 뉴스 기사 선택 및 이미지 생성 화면
+# 화면 2: 뉴스 기사 선택 및 대화형 이미지 생성 화면
 # ---------------------------------------------------------
 elif st.session_state['step'] == 'result':
     top_col1, top_col2 = st.columns([4, 1])
@@ -403,33 +400,11 @@ elif st.session_state['step'] == 'result':
 
             current_article_key = f"{selected_label}_{content_format}"
             if 'last_art_key' not in st.session_state or st.session_state['last_art_key'] != current_article_key:
-                if gemini_key and selected_label in article_options:
-                    with st.spinner("AI가 이미지 프롬프트와 한글 메시지를 구상 중입니다..."):
-                        ai_data = generate_ai_content_data(
-                            article_options[selected_label]['title'],
-                            article_options[selected_label]['desc'],
-                            content_format,
-                            gemini_key
-                        )
-                        st.session_state['ai_prompt_text'] = ai_data.get('image_prompt', '')
-                        st.session_state['korean_catch_text'] = ai_data.get('korean_catchphrase', '')
-                        st.session_state['last_art_key'] = current_article_key
+                # 기사가 바뀌면 이전 생성 결과 초기화
+                st.session_state.pop('image_bytes', None)
+                st.session_state['last_art_key'] = current_article_key
 
-            st.markdown("#### ✍️ AI 이미지 프롬프트 (영어, 직접 수정 가능)")
-            editable_prompt = st.text_area(
-                "프롬프트 수정",
-                value=st.session_state.get('ai_prompt_text', 'Professional illustration'),
-                height=70,
-                label_visibility="collapsed"
-            )
-
-            st.markdown("#### 💬 포스터 하단 한글 핵심 메시지 (직접 수정 가능)")
-            editable_catchphrase = st.text_input(
-                "한글 메시지 수정",
-                value=st.session_state.get('korean_catch_text', ''),
-                label_visibility="collapsed"
-            )
-
+            # 처음에 딱 존재하는 생성 버튼
             submit_plan = st.button("기사 맞춤형 콘텐츠 생성하기", use_container_width=True)
 
             if submit_plan:
@@ -440,32 +415,80 @@ elif st.session_state['step'] == 'result':
                 else:
                     selected_article = article_options[selected_label]
                     
-                    with st.spinner(f"⏳ AI가 '{content_format}' 콘텐츠를 제작 중입니다..."):
+                    with st.spinner(f"⏳ 고품질 AI 일러스트와 '{content_format}' 디자인을 렌더링 중입니다..."):
+                        ai_data = generate_ai_content_data(
+                            selected_article['title'],
+                            selected_article['desc'],
+                            content_format,
+                            "",
+                            gemini_key
+                        )
+                        st.session_state['current_prompt'] = ai_data.get('image_prompt', '')
+                        st.session_state['current_catch'] = ai_data.get('korean_catchphrase', '')
+                        
                         image_bytes = create_final_media_content(
-                            editable_catchphrase, 
-                            selected_article['desc'], 
-                            content_format, 
-                            editable_prompt
+                            st.session_state['current_catch'],
+                            selected_article['desc'],
+                            content_format,
+                            st.session_state['current_prompt']
                         )
                         
                         st.session_state['selected_article'] = selected_article
                         st.session_state['content_format'] = content_format
                         st.session_state['image_bytes'] = image_bytes
 
+            # 이미지가 생성된 이후에만 나타나는 대화형 수정 피드백 영역
             if 'image_bytes' in st.session_state and st.session_state['image_bytes']:
                 st.markdown('<div class="image-preview-container">', unsafe_allow_html=True)
-                st.markdown(f"### 🎬 [{st.session_state['content_format']}] AI 맞춤형 콘텐츠 생성 완료")
+                st.markdown(f"### 🎬 [{st.session_state['content_format']}] 생성된 맞춤형 결과물")
                 art = st.session_state['selected_article']
                 st.markdown(f"**기반 뉴스**: [{art['title']}]({art['link']})")
                 st.markdown("---")
                 
                 st.image(st.session_state['image_bytes'], use_container_width=True, caption=f"{art['title']} - {st.session_state['content_format']}")
                 
-                st.download_button(
-                    label="📥 콘텐츠 이미지 다운로드 (PNG)",
-                    data=st.session_state['image_bytes'],
-                    file_name=f"FrameLens_{st.session_state['content_format'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
-                    mime="image/png",
-                    use_container_width=True
+                st.markdown("---")
+                st.markdown("#### 💬 AI와 대화하듯 수정 요구사항 남기기")
+                st.caption("예: '더 밝고 따뜻한 색감으로 바꿔줘', '핵심 문구를 더 짧고 강렬하게 수정해줘'")
+                
+                user_feedback = st.text_input(
+                    "수정 요청 사항",
+                    value="",
+                    placeholder="수정하고 싶은 내용을 입력하세요...",
+                    label_visibility="collapsed"
                 )
+                
+                col_ref, col_down = st.columns([1, 1])
+                with col_ref:
+                    if st.button("🔄 피드백 반영하여 다시 생성하기", use_container_width=True):
+                        if user_feedback.strip():
+                            with st.spinner("💬 수정 요청을 반영하여 이미지를 다시 다듬고 있습니다..."):
+                                ai_data = generate_ai_content_data(
+                                    art['title'],
+                                    art['desc'],
+                                    st.session_state['content_format'],
+                                    user_feedback,
+                                    gemini_key
+                                )
+                                st.session_state['current_prompt'] = ai_data.get('image_prompt', '')
+                                st.session_state['current_catch'] = ai_data.get('korean_catchphrase', '')
+                                
+                                image_bytes = create_final_media_content(
+                                    st.session_state['current_catch'],
+                                    art['desc'],
+                                    st.session_state['content_format'],
+                                    st.session_state['current_prompt']
+                                )
+                                st.session_state['image_bytes'] = image_bytes
+                                st.rerun()
+                        else:
+                            st.warning("⚠️ 수정하고 싶은 내용을 입력해 주세요!")
+                with col_down:
+                    st.download_button(
+                        label="📥 최종 이미지 다운로드 (PNG)",
+                        data=st.session_state['image_bytes'],
+                        file_name=f"FrameLens_{st.session_state['content_format'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+                        mime="image/png",
+                        use_container_width=True
+                    )
                 st.markdown('</div>', unsafe_allow_html=True)
