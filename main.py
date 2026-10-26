@@ -161,9 +161,9 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# Gemini AI 콘텐츠 생성 함수 (gemini-1.5-flash 표준 엔드포인트 적용)
+# 태희가 알려준 gemini-3.5-flash-lite 모델을 사용하는 콘텐츠 생성 함수
 def generate_actual_media_content(selected_title, selected_desc, content_format, api_key):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     
     prompt = f"""
     당신은 프로페셔널한 미디어 콘텐츠 크리에이터입니다.
@@ -347,7 +347,6 @@ elif st.session_state['step'] == 'result':
                 else:
                     selected_article = article_options[selected_label]
                     
-                    # Streamlit 기본 로딩 스피너와 예상 소요 시간 안내 적용 (두 번째 사진의 회전 아이콘 효과)
                     with st.spinner("⏳ AI가 선택된 형식을 바탕으로 미디어 콘텐츠를 제작하고 있습니다... (예상 소요 시간: 약 3~5초)"):
                         content_result = generate_actual_media_content(
                             selected_article['title'], 
@@ -359,7 +358,6 @@ elif st.session_state['step'] == 'result':
                         st.session_state['content_format'] = content_format
                         st.session_state['content_result'] = content_result
 
-            # 생성된 결과가 있으면 하단에 멋진 카드 형태로 렌더링
             if 'content_result' in st.session_state and st.session_state['content_result']:
                 st.markdown('<div class="content-preview-card">', unsafe_allow_html=True)
                 st.markdown(f"### 🎬 AI 제작된 [{st.session_state['content_format']}] 결과물")
