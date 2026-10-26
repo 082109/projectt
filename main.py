@@ -4,6 +4,7 @@ import urllib.parse
 import json
 from datetime import datetime
 import io
+import os
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
@@ -197,9 +198,9 @@ def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=6):
     return curr_y
 
 # ---------------------------------------------------------
-# [핵심] AI 일러스트 이미지 다운로드 및 하단 핵심 메시지 합성
+# [핵심 1] Gemini로 영문 이미지 프롬프트 + 강렬한 한국어 캐치프레이즈 동시 추출
 # ---------------------------------------------------------
-def create_real_ai_poster_image(title, desc, content_format, api_key):
+def generate_ai_content_data(title, desc, content_format, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     
     if content_format == "만화 (컷툰/웹툰)":
@@ -209,25 +210,46 @@ def create_real_ai_poster_image(title, desc, content_format, api_key):
     else:
         style_desc = "a clean statistical data infographic design with bar charts and icons"
 
-    prompt = f"Create a detailed English image generation prompt for {style_desc} about this news: Title: {title}, Summary: {desc}. Output ONLY the prompt text."
+    prompt = f"""
+    Analyze this news article and output strictly in JSON format (no other text):
+    - News Title: {title}
+    - News Summary: {desc}
+    - Format: {style_desc}
+
+    JSON structure:
+    {{
+      "image_prompt": "Detailed English image generation prompt for AI to draw the visual illustration.",
+      "korean_catchphrase": "강렬하고 직관적인 한국어 핵심 한 줄 캐치프레이즈 (공익 포스터/만화풍 문구)"
+    }}
+    """
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     data = json.dumps(payload).encode('utf-8')
     req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
     
-    img_prompt = f"Professional illustration about {title}"
     try:
         with urllib.request.urlopen(req) as response:
             if response.getcode() == 200:
                 res_json = json.loads(response.read().decode('utf-8'))
-                img_prompt = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
+                raw_text = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
+                clean_json = raw_text[raw_text.find("{"):raw_text.rfind("}")+1]
+                return json.loads(clean_json)
     except Exception:
         pass
 
-    encoded_prompt = urllib.parse.quote(img_prompt)
+    return {
+        "image_prompt": f"Professional illustration about {title}, high quality graphic design",
+        "korean_catchphrase": title
+    }
+
+# ---------------------------------------------------------
+# [핵심 2] 최종 이미지(AI 일러스트 + 한글 핵심 메시지 합성) 제작 함수
+# ---------------------------------------------------------
+def create_final_media_content(catchphrase, desc, content_format, final_prompt):
+    encoded_prompt = urllib.parse.quote(final_prompt)
     ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=700&height=550&nologo=true"
     
     try:
-        res = requests.get(ai_image_url, timeout=15)
+        res = requests.get(ai_image_url, timeout=20)
         ai_img = Image.open(io.BytesIO(res.content)).convert("RGB")
     except Exception:
         ai_img = Image.new("RGB", (700, 550), color=(230, 235, 245))
@@ -241,11 +263,14 @@ def create_real_ai_poster_image(title, desc, content_format, api_key):
     draw.line([(0, 550), (poster_w, 550)], fill=(200, 205, 215), width=3)
 
     f_badge = get_korean_font(13)
-    f_catch = get_korean_font(24)
+    f_catch = get_korean_font(22)
     f_body = get_korean_font(14)
 
     draw.text((40, 580), f"📌 [{content_format.upper()}] 핵심 메시지", fill=(2, 132, 199), font=f_badge)
-    draw_wrapped_text(draw, f"\"{title}\"", f_catch, (15, 23, 42), 40, 620, poster_w - 80, line_spacing=8)
+    
+    # 한국어 핵심 캐치프레이즈 출력
+    draw_wrapped_text(draw, f"\"{catchphrase}\"", f_catch, (15, 23, 42), 40, 620, poster_w - 80, line_spacing=8)
+    
     draw_wrapped_text(draw, desc[:150] + "...", f_body, (100, 116, 139), 40, 770, poster_w - 80)
     draw.text((40, poster_h - 45), "FrameLens AI Media Production Studio", fill=(160, 170, 185), font=f_badge)
     draw.rectangle([0, 0, poster_w - 1, poster_h - 1], outline=(30, 41, 59), width=3)
@@ -261,7 +286,7 @@ def create_real_ai_poster_image(title, desc, content_format, api_key):
 if st.session_state['step'] == 'search':
     st.markdown('<div style="height: 60px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens Studio</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-subtitle">뉴스 키워드를 검색하고, 뉴스 맞춤형 AI 시각 콘텐츠를 생성해보세요!</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">뉴스 키워드를 검색하고, 한글 메시지와 AI 일러스트가 어우러진 포스터를 생성해보세요!</div>', unsafe_allow_html=True)
 
     with st.form(key="search_form"):
         st.markdown('<div class="search-container">', unsafe_allow_html=True)
@@ -376,7 +401,35 @@ elif st.session_state['step'] == 'result':
                 st.markdown(f"[원문 기사 읽기]({selected_art['link']})")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-            # 버튼 문구를 '기사 맞춤형 콘텐츠 생성하기'로 변경
+            current_article_key = f"{selected_label}_{content_format}"
+            if 'last_art_key' not in st.session_state or st.session_state['last_art_key'] != current_article_key:
+                if gemini_key and selected_label in article_options:
+                    with st.spinner("AI가 이미지 프롬프트와 한글 메시지를 구상 중입니다..."):
+                        ai_data = generate_ai_content_data(
+                            article_options[selected_label]['title'],
+                            article_options[selected_label]['desc'],
+                            content_format,
+                            gemini_key
+                        )
+                        st.session_state['ai_prompt_text'] = ai_data.get('image_prompt', '')
+                        st.session_state['korean_catch_text'] = ai_data.get('korean_catchphrase', '')
+                        st.session_state['last_art_key'] = current_article_key
+
+            st.markdown("#### ✍️ AI 이미지 프롬프트 (영어, 직접 수정 가능)")
+            editable_prompt = st.text_area(
+                "프롬프트 수정",
+                value=st.session_state.get('ai_prompt_text', 'Professional illustration'),
+                height=70,
+                label_visibility="collapsed"
+            )
+
+            st.markdown("#### 💬 포스터 하단 한글 핵심 메시지 (직접 수정 가능)")
+            editable_catchphrase = st.text_input(
+                "한글 메시지 수정",
+                value=st.session_state.get('korean_catch_text', ''),
+                label_visibility="collapsed"
+            )
+
             submit_plan = st.button("기사 맞춤형 콘텐츠 생성하기", use_container_width=True)
 
             if submit_plan:
@@ -387,12 +440,12 @@ elif st.session_state['step'] == 'result':
                 else:
                     selected_article = article_options[selected_label]
                     
-                    with st.spinner(f"⏳ AI가 뉴스 기사를 분석하고 '{content_format}' 콘텐츠를 제작 중입니다..."):
-                        image_bytes = create_real_ai_poster_image(
-                            selected_article['title'], 
+                    with st.spinner(f"⏳ AI가 '{content_format}' 콘텐츠를 제작 중입니다..."):
+                        image_bytes = create_final_media_content(
+                            editable_catchphrase, 
                             selected_article['desc'], 
                             content_format, 
-                            gemini_key
+                            editable_prompt
                         )
                         
                         st.session_state['selected_article'] = selected_article
