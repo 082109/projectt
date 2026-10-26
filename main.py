@@ -8,7 +8,7 @@ from datetime import datetime
 # 1. 페이지 기본 설정 및 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="FrameLens - AI 미디어 포스터 스튜디오",
+    page_title="FrameLens - AI 미디어 포털",
     page_icon="🎬",
     layout="wide"
 )
@@ -160,23 +160,26 @@ def fetch_naver_news(query, display_count=100):
         return []
 
 # ---------------------------------------------------------
-# [핵심] Gemini AI를 통해 뉴스 기사를 분석하고 진짜 이미지 생성용 영문 프롬프트 추출
+# [핵심] 선택한 형식(만화, 포스터, 인포그래픽)에 맞춘 AI 이미지 생성 함수
 # ---------------------------------------------------------
 def generate_news_visual_image_url(title, desc, content_format, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     
+    if content_format == "만화 (컷툰/웹툰)":
+        format_desc = "a 4-panel webtoon comic strip with cute characters, speech bubbles, and sequential storytelling"
+    elif content_format == "포스터":
+        format_desc = "a professional public campaign poster design with striking visual graphics and a clear thematic catchphrase"
+    else: # 인포그래픽
+        format_desc = "a clean statistical data infographic design featuring bar charts, pie charts, and data icons"
+
     prompt = f"""
     You are an expert professional media designer and illustrator.
-    Analyze the following Korean news article and create a detailed English image generation prompt for a '{content_format}'.
+    Create a detailed English image generation prompt for {format_desc} based on this news:
     
     - News Title: {title}
     - News Summary: {desc}
-    - Format Type: {content_format} (Options: 만화 4-panel webtoon comic strip, 포스터 public campaign poster design, 인포그래픽 clean statistical data infographic)
 
-    Requirements for the image prompt:
-    1. Describe a vivid, high-quality visual illustration matching the news topic.
-    2. Professional graphic design, vibrant colors, clear composition, suitable for news publication.
-    3. Output ONLY the English image generation prompt text, nothing else.
+    Output ONLY the English image generation prompt text, nothing else.
     """
 
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -192,7 +195,6 @@ def generate_news_visual_image_url(title, desc, content_format, api_key):
     except Exception:
         pass
 
-    # 안정적인 퍼블릭 AI 이미지 생성 서비스 URL 조합 (실제 고화질 이미지 즉시 렌더링)
     encoded_prompt = urllib.parse.quote(image_prompt)
     image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=1000&nologo=true"
     return image_url
@@ -203,7 +205,7 @@ def generate_news_visual_image_url(title, desc, content_format, api_key):
 if st.session_state['step'] == 'search':
     st.markdown('<div style="height: 60px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens Studio</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-subtitle">뉴스 키워드를 검색하고, 실제 뉴스 기사 맞춤형 AI 포스터·만화·인포그래픽 결과물을 생성해 보세요!</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">뉴스 키워드를 검색하고, 만화·포스터·인포그래픽 중 원하는 형식을 골라 AI 맞춤형 시각 결과물을 생성해 보세요!</div>', unsafe_allow_html=True)
 
     with st.form(key="search_form"):
         st.markdown('<div class="search-container">', unsafe_allow_html=True)
@@ -299,6 +301,7 @@ elif st.session_state['step'] == 'result':
         with right_col:
             st.markdown("### 기획할 미디어 콘텐츠 유형 선택")
             
+            # 3가지 형식을 자유롭게 선택 가능하도록 복구
             content_format = st.selectbox(
                 "형식 선택",
                 [
@@ -318,7 +321,7 @@ elif st.session_state['step'] == 'result':
                 st.markdown(f"[원문 기사 읽기]({selected_art['link']})")
             st.markdown('</div>', unsafe_allow_html=True)
 
-            submit_plan = st.button("실제 AI 맞춤형 포스터/이미지 생성하기", use_container_width=True)
+            submit_plan = st.button("실제 AI 맞춤형 시각 이미지 생성하기", use_container_width=True)
 
             if submit_plan:
                 if not gemini_key:
@@ -347,7 +350,6 @@ elif st.session_state['step'] == 'result':
                 st.markdown(f"**기반 뉴스**: [{art['title']}]({art['link']})")
                 st.markdown("---")
                 
-                # 실제 AI 생성 이미지 출력
                 st.image(st.session_state['generated_image_url'], use_container_width=True, caption=f"{art['title']} - {st.session_state['content_format']} (AI Generated)")
                 
                 st.markdown(f"""
