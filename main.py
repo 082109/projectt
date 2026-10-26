@@ -4,6 +4,7 @@ import urllib.parse
 import json
 from datetime import datetime
 import io
+import os
 from PIL import Image, ImageDraw, ImageFont
 
 # ---------------------------------------------------------
@@ -118,13 +119,30 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. 세션 상태 초기화
+# 2. 세션 상태 초기화 및 한글 폰트 자동 준비
 # ---------------------------------------------------------
 if 'step' not in st.session_state:
     st.session_state['step'] = 'search'
 
 if 'page_number' not in st.session_state:
     st.session_state['page_number'] = 1
+
+# 한글 깨짐 방지를 위한 나눔고딕 폰트 자동 다운로드 함수
+def get_korean_font(font_size=18):
+    font_path = "NanumGothic.ttf"
+    if not os.path.exists(font_path):
+        try:
+            url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
+            urllib.request.urlretrieve(url, font_path)
+        except Exception:
+            pass
+    
+    try:
+        if os.path.exists(font_path):
+            return ImageFont.truetype(font_path, font_size)
+    except Exception:
+        pass
+    return ImageFont.load_default()
 
 st.sidebar.header("API 설정")
 client_id = st.secrets.get("NAVER_CLIENT_ID", "").strip() or st.sidebar.text_input("Naver Client ID", type="password").strip()
@@ -163,21 +181,21 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# Gemini AI를 통한 뉴스 기사 맞춤형 텍스트 콘텐츠 생성
+# Gemini AI를 통한 뉴스 기사 맞춤형 텍스트 생성
 def generate_ai_content_text(title, desc, content_format, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     
     prompt = f"""
     당신은 프로페셔널한 미디어 콘텐츠 크리에이터입니다.
-    다음 뉴스 기사를 바탕으로 '{content_format}' 형식에 어울리는 핵심 맞춤형 문구를 작성해주세요.
+    다음 뉴스 기사를 바탕으로 '{content_format}' 형식에 어울리는 구체적이고 생생한 맞춤형 문구를 작성해주세요.
 
     - 뉴스 제목: {title}
     - 뉴스 요약: {desc}
     - 콘텐츠 형식: {content_format}
 
-    반드시 아래 형식으로 딱 2줄만 요약해서 작성해줘 (다른 설명 없이 결과만 출력):
-    헤드카피: [눈길을 사로잡는 강렬한 한 줄 카피]
-    본문요약: [뉴스의 핵심 내용을 담은 2문장 내외의 요약 설명]
+    반드시 아래 형식으로 작성해줘 (다른 설명 없이 결과만 출력):
+    헤드카피: [기사의 핵심을 찌르는 강렬한 한 줄 타이틀]
+    본문요약: [기사의 주요 배경과 핵심 내용을 알기 쉽게 풀어쓴 3~4문장 분량의 요약 설명]
     """
 
     payload = {
@@ -198,8 +216,8 @@ def generate_ai_content_text(title, desc, content_format, api_key):
     except Exception:
         return f"헤드카피: {title}\n본문요약: {desc}"
 
-# AI가 생성한 기사 맞춤형 텍스트를 바탕으로 PIL 이미지 생성
-def create_media_content_image(content_format, ai_text_result):
+# 기사 맞춤형 텍스트를 PIL 이미지로 렌더링하는 함수 (한글 폰트 적용)
+def create_media_content_image(content_format, ai_text_result, article_title):
     if content_format == "인스타그램 카드뉴스":
         img_width, img_height = 800, 800
         bg_color = (13, 21, 39)
@@ -219,19 +237,15 @@ def create_media_content_image(content_format, ai_text_result):
     image = Image.new("RGB", (img_width, img_height), color=bg_color)
     draw = ImageDraw.Draw(image)
 
-    try:
-        font_title = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
-        font_body = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
-        font_badge = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
-    except Exception:
-        font_title = ImageFont.load_default()
-        font_body = ImageFont.load_default()
-        font_badge = ImageFont.load_default()
+    font_title = get_korean_font(24)
+    font_body = get_korean_font(16)
+    font_badge = get_korean_font(13)
 
+    # 테두리 및 상단 뱃지
     draw.rectangle([25, 25, img_width - 25, img_height - 25], outline=accent_color, width=3)
-    draw.text((50, 50), badge_text, fill=accent_color, font=font_badge)
+    draw.text((45, 45), badge_text, fill=accent_color, font=font_badge)
 
-    headcopy = "AI 미디어 콘텐츠 기획"
+    headcopy = article_title
     bodytext = ai_text_result
     for line in ai_text_result.split("\n"):
         if "헤드카피:" in line:
@@ -239,13 +253,14 @@ def create_media_content_image(content_format, ai_text_result):
         elif "본문요약:" in line:
             bodytext = line.replace("본문요약:", "").strip()
 
-    margin = 50
-    max_width = img_width - 100
-    y_text = 100
+    margin = 45
+    max_width = img_width - 90
+    y_text = 85
 
     draw.text((margin, y_text), "📌 [핵심 헤드카피]", fill=accent_color, font=font_badge)
-    y_text += 30
+    y_text += 25
 
+    # 헤드카피 줄바꿈 렌더링
     words = headcopy.split()
     line = ""
     for word in words:
@@ -254,18 +269,20 @@ def create_media_content_image(content_format, ai_text_result):
             line = test_line
         else:
             draw.text((margin, y_text), line, fill=(255, 255, 255), font=font_title)
-            y_text += 40
+            y_text += 32
             line = word + " "
     if line:
         draw.text((margin, y_text), line, fill=(255, 255, 255), font=font_title)
-        y_text += 60
+        y_text += 45
 
-    draw.line([(margin, y_text), (img_width - 50, y_text)], fill=(71, 85, 105), width=2)
-    y_text += 40
-
-    draw.text((margin, y_text), "📝 [뉴스 상세 요약 및 연출]", fill=accent_color, font=font_badge)
+    # 구분선
+    draw.line([(margin, y_text), (img_width - 45, y_text)], fill=(71, 85, 105), width=2)
     y_text += 30
 
+    draw.text((margin, y_text), "📝 [기사 맞춤형 요약 내용]", fill=accent_color, font=font_badge)
+    y_text += 25
+
+    # 본문 줄바꿈 렌더링
     words = bodytext.split()
     line = ""
     for word in words:
@@ -274,14 +291,14 @@ def create_media_content_image(content_format, ai_text_result):
             line = test_line
         else:
             draw.text((margin, y_text), line, fill=(203, 213, 225), font=font_body)
-            y_text += 30
+            y_text = y_text + 26
             line = word + " "
-            if y_text > img_height - 100:
+            if y_text > img_height - 80:
                 break
     if line:
         draw.text((margin, y_text), line, fill=(203, 213, 225), font=font_body)
 
-    draw.text((margin, img_height - 60), "FrameLens Media Production Portal", fill=accent_color, font=font_badge)
+    draw.text((margin, img_height - 50), "FrameLens Media Production Portal", fill=accent_color, font=font_badge)
 
     buf = io.BytesIO()
     image.save(buf, format="PNG")
@@ -289,14 +306,13 @@ def create_media_content_image(content_format, ai_text_result):
     return buf
 
 # ---------------------------------------------------------
-# 화면 1: 초기 검색 창 (st.form을 적용해 엔터 키 입력 시 검색 실행)
+# 화면 1: 초기 검색 창 (st.form 적용으로 엔터 키 검색 지원)
 # ---------------------------------------------------------
 if st.session_state['step'] == 'search':
     st.markdown('<div style="height: 60px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens</div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-subtitle">탐색하고 싶은 뉴스 키워드를 입력하고, 맞춤형 미디어 콘텐츠 이미지를 생성해보세요.</div>', unsafe_allow_html=True)
 
-    # st.form으로 감싸서 엔터 키만 눌러도 검색이 실행되도록 처리
     with st.form(key="search_form"):
         st.markdown('<div class="search-container">', unsafe_allow_html=True)
         s_col1, s_col2 = st.columns([5, 1])
@@ -400,7 +416,6 @@ elif st.session_state['step'] == 'result':
                     "공익 캠페인 포스터",
                     "만화 (컷툰/웹툰)"
                 ],
-    
                 label_visibility="collapsed"
             )
 
@@ -430,7 +445,11 @@ elif st.session_state['step'] == 'result':
                             content_format, 
                             gemini_key
                         )
-                        image_bytes = create_media_content_image(content_format, ai_text_result)
+                        image_bytes = create_media_content_image(
+                            content_format, 
+                            ai_text_result, 
+                            selected_article['title']
+                        )
                         
                         st.session_state['selected_article'] = selected_article
                         st.session_state['content_format'] = content_format
