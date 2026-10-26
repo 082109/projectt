@@ -3,6 +3,8 @@ import urllib.request
 import urllib.parse
 import json
 from datetime import datetime
+import io
+from PIL import Image, ImageDraw, ImageFont
 
 # ---------------------------------------------------------
 # 1. 페이지 기본 설정 및 우아한 세리프 폰트 UI 스타일링
@@ -13,7 +15,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# 구글 폰트 Noto Serif KR 전면 적용
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
@@ -95,20 +96,13 @@ st.markdown("""
         margin-bottom: 20px;
     }
 
-    .media-card-slide {
+    .image-preview-container {
         background: #0d1527;
-        border: 1.5px solid #22d3ee;
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 20px rgba(34, 211, 238, 0.15);
-    }
-    .media-card-slide h4 {
-        color: #22d3ee !important;
-        margin-top: 0;
-        font-weight: 700;
-        border-bottom: 1px solid #1e293b;
-        padding-bottom: 10px;
+        border: 2px solid #22d3ee;
+        border-radius: 20px;
+        padding: 30px;
+        margin-top: 25px;
+        box-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
     }
 
     h1, h2, h3, h4, label {
@@ -168,59 +162,85 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# 3가지 형식(인스타그램 카드뉴스, 공익 캠페인 포스터, 만화)에 맞춘 Gemini 콘텐츠 생성 함수
-def generate_actual_media_content(selected_title, selected_desc, content_format, api_key):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
-    
-    prompt = f"""
-    당신은 프로페셔널한 미디어 콘텐츠 크리에이터입니다.
-    아래 뉴스 기사를 바탕으로 사용자가 선택한 미디어 형식에 맞는 **실제 콘텐츠 내용 및 카드별 구성**을 작성해주세요.
+# 3가지 형식별 맞춤형 실시간 이미지 생성 함수 (Pillow 활용)
+def create_media_content_image(title, desc, content_format):
+    # 형식별 캔버스 크기 설정 (카드뉴스: 정사각형, 포스터: 세로형, 만화: 가로형 웹툰 컷)
+    if content_format == "인스타그램 카드뉴스":
+        img_width, img_height = 800, 800
+        bg_color = (13, 21, 39)     # 딥 네이비
+        accent_color = (34, 211, 238) # 시안 네온
+        badge_text = "[ INSTAGRAM CARD NEWS ]"
+    elif content_format == "공익 캠페인 포스터":
+        img_width, img_height = 700, 950
+        bg_color = (15, 23, 42)     # 다크 슬레이트
+        accent_color = (250, 204, 21) # 골드/옐로우 포인트
+        badge_text = "[ PUBLIC CAMPAIGN POSTER ]"
+    else: # 만화 (컷툰/웹툰)
+        img_width, img_height = 850, 600
+        bg_color = (30, 27, 75)     # 인디고 퍼플
+        accent_color = (244, 114, 182) # 핑크 포인트
+        badge_text = "[ WEBTOON / CUTTOON COMIC ]"
 
-    - 뉴스 제목: {selected_title}
-    - 뉴스 요약: {selected_desc}
-    - 콘텐츠 형식: {content_format}
+    # 이미지 캔버스 생성
+    image = Image.new("RGB", (img_width, img_height), color=bg_color)
+    draw = ImageDraw.Draw(image)
 
-    선택한 형식({content_format})의 특성을 살려 정확히 4개의 슬라이드(장/컷)로 나누어 작성해줘.
-    반드시 아래 형식 구조를 지켜서 출력해줘 (다른 서두나 인사말 없이 바로 출력할 것):
-
-    ### [슬라이드 1] 도입 및 훅 (Hook)
-    - **메인 헤드카피**: (강렬한 문구)
-    - **시각 연출 및 디자인 묘사**: (배경, 컬러, 이미지/아이콘 구상)
-    - **본문 내용**: (상세 텍스트 설명)
-
-    ### [슬라이드 2] 전개 및 원인 분석
-    - **메인 헤드카피**: (...)
-    - **시각 연출 및 디자인 묘사**: (...)
-    - **본문 내용**: (...)
-
-    ### [슬라이드 3] 핵심 시사점 및 심층 내용
-    - **메인 헤드카피**: (...)
-    - **시각 연출 및 디자인 묘사**: (...)
-    - **본문 내용**: (...)
-
-    ### [슬라이드 4] 결론 및 행동 유도 (Call to Action)
-    - **메인 헤드카피**: (...)
-    - **시각 연출 및 디자인 묘사**: (...)
-    - **본문 내용**: (...)
-    """
-
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }]
-    }
-    
-    data = json.dumps(payload).encode('utf-8')
-    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
-    
+    # 폰트 로드 (기본 폰트 또는 시스템 폰트 대체)
     try:
-        with urllib.request.urlopen(req) as response:
-            if response.getcode() == 200:
-                res_json = json.loads(response.read().decode('utf-8'))
-                return res_json['candidates'][0]['content']['parts'][0]['text']
-        return "❌ AI 응답을 받아오지 못했습니다."
-    except Exception as err:
-        return f"❌ 오류 발생: {str(err)}"
+        font_title = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+        font_body = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
+        font_badge = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
+    except Exception:
+        font_title = ImageFont.load_default()
+        font_body = ImageFont.load_default()
+        font_badge = ImageFont.load_default()
+
+    # 테두리 디자인 박스 그리기
+    draw.rectangle([25, 25, img_width - 25, img_height - 25], outline=accent_color, width=3)
+
+    # 상단 뱃지 텍스트
+    draw.text((50, 50), badge_text, fill=accent_color, font=font_badge)
+
+    # 타이틀 텍스트 자동 줄바꿈 처리
+    margin = 50
+    max_width = img_width - 100
+    
+    # 제목 그리기
+    draw.text((margin, 90), "📰 [AI 뉴스 요약 및 기획]", fill=(255, 255, 255), font=font_title)
+    
+    # 본문 뉴스 제목 및 내용 줄바꿈 렌더링
+    y_text = 160
+    draw.text((margin, y_text), f"• 주요 기사: {title[:45]}...", fill=(226, 232, 240), font=font_body)
+    y_text += 40
+
+    # 구분선
+    draw.line([(margin, y_text), (img_width - 50, y_text)], fill=(71, 85, 105), width=2)
+    y_text += 30
+
+    # 요약 내용 설명 출력
+    words = desc.split()
+    line = ""
+    for word in words:
+        test_line = line + word + " "
+        if draw.textlength(test_line, font=font_body) <= max_width:
+            line = test_line
+        else:
+            draw.text((margin, y_text), line, fill=(148, 163, 184), font=font_body)
+            y_text += 30
+            line = word + " "
+            if y_text > img_height - 100:
+                break
+    if line:
+        draw.text((margin, y_text), line, fill=(148, 163, 184), font=font_body)
+
+    # 하단 푸터 브랜딩
+    draw.text((margin, img_height - 60), "FrameLens Media Production Portal", fill=accent_color, font=font_badge)
+
+    # BytesIO 버퍼에 이미지 저장
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
 
 # ---------------------------------------------------------
 # 화면 1: 초기 검색 창만 심플하게 뜨는 메인 홈
@@ -228,7 +248,7 @@ def generate_actual_media_content(selected_title, selected_desc, content_format,
 if st.session_state['step'] == 'search':
     st.markdown('<div style="height: 60px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-subtitle">탐색하고 싶은 뉴스 키워드를 입력하고, 세련된 미디어 콘텐츠를 기획해보세요.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">탐색하고 싶은 뉴스 키워드를 입력하고, 세련된 미디어 콘텐츠 이미지를 생성해보세요.</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="search-container">', unsafe_allow_html=True)
     s_col1, s_col2 = st.columns([5, 1])
@@ -256,7 +276,7 @@ if st.session_state['step'] == 'search':
                 st.rerun()
 
 # ---------------------------------------------------------
-# 화면 2: 뉴스 기사 선택 및 AI 콘텐츠 생성 화면
+# 화면 2: 뉴스 기사 선택 및 이미지 콘텐츠 생성 화면
 # ---------------------------------------------------------
 elif st.session_state['step'] == 'result':
     top_col1, top_col2 = st.columns([4, 1])
@@ -321,7 +341,7 @@ elif st.session_state['step'] == 'result':
                         st.session_state['page_number'] += 1
                         st.rerun()
 
-        # [오른쪽 컬럼] 미디어 형식 선택 및 AI 콘텐츠 생성 (미니북 제외, 딱 3가지 형식)
+        # [오른쪽 컬럼] 미디어 형식 선택 (딱 3가지) 및 이미지 생성
         with right_col:
             st.markdown("### 기획할 미디어 콘텐츠 유형 선택")
             
@@ -344,51 +364,41 @@ elif st.session_state['step'] == 'result':
                 st.markdown(f"[원문 기사 읽기]({selected_art['link']})")
             st.markdown('</div>', unsafe_allow_html=True)
 
-            submit_plan = st.button("AI 미디어 콘텐츠 생성하기", use_container_width=True)
+            submit_plan = st.button("미디어 콘텐츠 이미지 생성하기", use_container_width=True)
 
             if submit_plan:
-                if not gemini_key:
-                    st.error("❌ 사이드바에 Gemini API Key를 입력해 주세요!")
-                elif selected_label not in article_options:
+                if selected_label not in article_options:
                     st.warning("⚠️ 선택된 뉴스 기사 정보를 찾을 수 없습니다.")
                 else:
                     selected_article = article_options[selected_label]
                     
-                    with st.spinner("⏳ AI가 선택된 형식을 바탕으로 미디어 콘텐츠를 제작하고 있습니다... (예상 소요 시간: 약 3~5초)"):
-                        content_result = generate_actual_media_content(
+                    with st.spinner(f"⏳ 선택된 형식('{content_format}')에 맞춘 맞춤형 이미지를 렌더링하고 있습니다..."):
+                        image_bytes = create_media_content_image(
                             selected_article['title'], 
                             selected_article['desc'], 
-                            content_format, 
-                            gemini_key
+                            content_format
                         )
                         st.session_state['selected_article'] = selected_article
                         st.session_state['content_format'] = content_format
-                        st.session_state['content_result'] = content_result
+                        st.session_state['image_bytes'] = image_bytes
 
-            # 생성된 결과가 있으면 슬라이드별 카드 UI 박스로 렌더링
-            if 'content_result' in st.session_state and st.session_state['content_result']:
-                st.markdown('<div class="content-preview-card">', unsafe_allow_html=True)
-                st.markdown(f"### 🎬 AI 제작된 [{st.session_state['content_format']}] 결과물")
+            # 생성된 이미지 결과물이 있을 때 화면에 뙇! 렌더링하고 다운로드 버튼 제공
+            if 'image_bytes' in st.session_state and st.session_state['image_bytes']:
+                st.markdown('<div class="image-preview-container">', unsafe_allow_html=True)
+                st.markdown(f"### 🎬 [{st.session_state['content_format']}] 이미지 생성 완료")
                 art = st.session_state['selected_article']
                 st.markdown(f"**기반 뉴스**: [{art['title']}]({art['link']})")
                 st.markdown("---")
                 
-                raw_text = st.session_state['content_result']
-                slides = raw_text.split("###")
+                # 화면에 실제 이미지 렌더링
+                st.image(st.session_state['image_bytes'], use_container_width=True, caption=f"{st.session_state['content_format']} 맞춤형 생성 이미지")
                 
-                for slide in slides:
-                    if slide.strip():
-                        parts = slide.split("\n", 1)
-                        slide_title = parts[0].strip()
-                        slide_body = parts[1].strip() if len(parts) > 1 else ""
-                        
-                        st.markdown(f"""
-                        <div class="media-card-slide">
-                            <h4>📄 {slide_title}</h4>
-                            <div style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
-                                {slide_body.replace(chr(10), '<br>')}
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
+                # 이미지 다운로드 버튼
+                st.download_button(
+                    label="📥 고화질 이미지 파일 다운로드 (PNG)",
+                    data=st.session_state['image_bytes'],
+                    file_name=f"FrameLens_{st.session_state['content_format'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
                 st.markdown('</div>', unsafe_allow_html=True)
