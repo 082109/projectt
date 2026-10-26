@@ -95,13 +95,20 @@ st.markdown("""
         margin-bottom: 20px;
     }
 
-    .content-preview-card {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        border: 2px solid #22d3ee;
-        border-radius: 20px;
-        padding: 30px;
-        margin-top: 25px;
-        box-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
+    .media-card-slide {
+        background: #0d1527;
+        border: 1.5px solid #22d3ee;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(34, 211, 238, 0.15);
+    }
+    .media-card-slide h4 {
+        color: #22d3ee !important;
+        margin-top: 0;
+        font-weight: 700;
+        border-bottom: 1px solid #1e293b;
+        padding-bottom: 10px;
     }
 
     h1, h2, h3, h4, label {
@@ -161,7 +168,7 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-# 태희가 알려준 gemini-3.5-flash-lite 모델을 사용하는 콘텐츠 생성 함수
+# 3가지 형식(인스타그램 카드뉴스, 공익 캠페인 포스터, 만화)에 맞춘 Gemini 콘텐츠 생성 함수
 def generate_actual_media_content(selected_title, selected_desc, content_format, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     
@@ -173,27 +180,28 @@ def generate_actual_media_content(selected_title, selected_desc, content_format,
     - 뉴스 요약: {selected_desc}
     - 콘텐츠 형식: {content_format}
 
-    선택한 형식({content_format})의 특성을 살려 4개의 카드/컷/페이지로 나누어 구체적인 문구와 연출을 작성해줘:
-    
-    [1장 / 1컷]
-    - 메인 헤드카피:
-    - 시각 연출 및 디자인 묘사:
-    - 본문 내용:
+    선택한 형식({content_format})의 특성을 살려 정확히 4개의 슬라이드(장/컷)로 나누어 작성해줘.
+    반드시 아래 형식 구조를 지켜서 출력해줘 (다른 서두나 인사말 없이 바로 출력할 것):
 
-    [2장 / 2컷]
-    - 메인 헤드카피:
-    - 시각 연출 및 디자인 묘사:
-    - 본문 내용:
+    ### [슬라이드 1] 도입 및 훅 (Hook)
+    - **메인 헤드카피**: (강렬한 문구)
+    - **시각 연출 및 디자인 묘사**: (배경, 컬러, 이미지/아이콘 구상)
+    - **본문 내용**: (상세 텍스트 설명)
 
-    [3장 / 3컷]
-    - 메인 헤드카피:
-    - 시각 연출 및 디자인 묘사:
-    - 본문 내용:
+    ### [슬라이드 2] 전개 및 원인 분석
+    - **메인 헤드카피**: (...)
+    - **시각 연출 및 디자인 묘사**: (...)
+    - **본문 내용**: (...)
 
-    [4장 / 4컷]
-    - 메인 헤드카피:
-    - 시각 연출 및 디자인 묘사:
-    - 본문 내용:
+    ### [슬라이드 3] 핵심 시사점 및 심층 내용
+    - **메인 헤드카피**: (...)
+    - **시각 연출 및 디자인 묘사**: (...)
+    - **본문 내용**: (...)
+
+    ### [슬라이드 4] 결론 및 행동 유도 (Call to Action)
+    - **메인 헤드카피**: (...)
+    - **시각 연출 및 디자인 묘사**: (...)
+    - **본문 내용**: (...)
     """
 
     payload = {
@@ -313,7 +321,7 @@ elif st.session_state['step'] == 'result':
                         st.session_state['page_number'] += 1
                         st.rerun()
 
-        # [오른쪽 컬럼] 미디어 형식 선택 및 AI 콘텐츠 생성
+        # [오른쪽 컬럼] 미디어 형식 선택 및 AI 콘텐츠 생성 (미니북 제외, 딱 3가지 형식)
         with right_col:
             st.markdown("### 기획할 미디어 콘텐츠 유형 선택")
             
@@ -322,7 +330,6 @@ elif st.session_state['step'] == 'result':
                 [
                     "인스타그램 카드뉴스",
                     "공익 캠페인 포스터",
-                    "미니북",
                     "만화 (컷툰/웹툰)"
                 ],
                 label_visibility="collapsed"
@@ -358,11 +365,30 @@ elif st.session_state['step'] == 'result':
                         st.session_state['content_format'] = content_format
                         st.session_state['content_result'] = content_result
 
+            # 생성된 결과가 있으면 슬라이드별 카드 UI 박스로 렌더링
             if 'content_result' in st.session_state and st.session_state['content_result']:
                 st.markdown('<div class="content-preview-card">', unsafe_allow_html=True)
                 st.markdown(f"### 🎬 AI 제작된 [{st.session_state['content_format']}] 결과물")
                 art = st.session_state['selected_article']
                 st.markdown(f"**기반 뉴스**: [{art['title']}]({art['link']})")
                 st.markdown("---")
-                st.markdown(st.session_state['content_result'])
+                
+                raw_text = st.session_state['content_result']
+                slides = raw_text.split("###")
+                
+                for slide in slides:
+                    if slide.strip():
+                        parts = slide.split("\n", 1)
+                        slide_title = parts[0].strip()
+                        slide_body = parts[1].strip() if len(parts) > 1 else ""
+                        
+                        st.markdown(f"""
+                        <div class="media-card-slide">
+                            <h4>📄 {slide_title}</h4>
+                            <div style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
+                                {slide_body.replace(chr(10), '<br>')}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
                 st.markdown('</div>', unsafe_allow_html=True)
