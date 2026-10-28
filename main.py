@@ -180,7 +180,7 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=6):
+def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=4):
     words = text.split()
     line = ""
     curr_y = y
@@ -198,25 +198,24 @@ def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=6):
     return curr_y
 
 # ---------------------------------------------------------
-# [형식 1] 진짜 4컷 만화 (2x2 그리드 + 말풍선) 생성 함수
+# [형식 1] 4컷 만화 생성 (진짜 AI 일러스트 4장 생성 후 합성)
 # ---------------------------------------------------------
 def generate_comic_scenario(title, desc, user_feedback, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     feedback_str = f"User Feedback to apply: {user_feedback}" if user_feedback else ""
     
     prompt = f"""
-    당신은 전문 웹툰 작가입니다. 다음 뉴스 기사를 바탕으로 인스타그램 4컷 만화 시나리오를 JSON으로 작성해주세요.
+    당신은 전문 웹툰 작가입니다. 다음 뉴스 기사를 바탕으로 인스타그램 4컷 만화의 각 컷별 영어 이미지 생성 프롬프트와 한국어 대사를 JSON으로 작성해주세요.
     - 뉴스 제목: {title}
     - 뉴스 요약: {desc}
     {feedback_str}
     
     반드시 아래 JSON 포맷으로만 답변하세요:
     {{
-      "cut1_title": "1컷 제목", "cut1_desc": "1컷 상황 설명", "cut1_speech": "1컷 대사/말풍선",
-      "cut2_title": "2컷 제목", "cut2_desc": "2컷 상황 설명", "cut2_speech": "2컷 대사/말풍선",
-      "cut3_title": "3컷 제목", "cut3_desc": "3컷 상황 설명", "cut3_speech": "3컷 대사/말풍선",
-      "cut4_title": "4컷 제목", "cut4_desc": "4컷 상황 설명", "cut4_speech": "4컷 대사/말풍선",
-      "catchphrase": "만화 하단에 들어갈 강렬한 핵심 한 줄 메시지"
+      "cut1_prompt": "Detailed English image prompt for panel 1", "cut1_speech": "1컷 말풍선 대사 (한국어)",
+      "cut2_prompt": "Detailed English image prompt for panel 2", "cut2_speech": "2컷 말풍선 대사 (한국어)",
+      "cut3_prompt": "Detailed English image prompt for panel 3", "cut3_speech": "3컷 말풍선 대사 (한국어)",
+      "cut4_prompt": "Detailed English image prompt for panel 4", "cut4_speech": "4컷 말풍선 대사 (한국어)"
     }}
     """
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -232,75 +231,73 @@ def generate_comic_scenario(title, desc, user_feedback, api_key):
     except Exception:
         pass
     return {
-        "cut1_title": "1컷: 이슈 발생", "cut1_desc": "뉴스 상황 포착", "cut1_speech": "이게 무슨 일이지?",
-        "cut2_title": "2컷: 원인 분석", "cut2_desc": "문제점 대두", "cut2_speech": "정말 심각하네...",
-        "cut3_title": "3컷: 핵심 대책", "cut3_desc": "해결 방안 모색", "cut3_speech": "이렇게 바꿔야 해!",
-        "cut4_title": "4컷: 최종 결론", "cut4_desc": "더 나은 방향 제시", "cut4_speech": "함께 지켜봐요!",
-        "catchphrase": title
+        "cut1_prompt": f"cute webtoon style illustration showing the beginning of {title}", "cut1_speech": "이게 무슨 일이지?",
+        "cut2_prompt": f"cute webtoon style illustration showing the core issue of {title}", "cut2_speech": "정말 심각한데?",
+        "cut3_prompt": f"cute webtoon style illustration showing the solution of {title}", "cut3_speech": "이렇게 해결하자!",
+        "cut4_prompt": f"cute webtoon style illustration showing the happy ending of {title}", "cut4_speech": "모두 안심이야!"
     }
 
+def fetch_ai_panel_image(prompt_text):
+    encoded_prompt = urllib.parse.quote(prompt_text)
+    ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=400&nologo=true&enhance=true"
+    try:
+        res = requests.get(ai_image_url, timeout=20)
+        img = Image.open(io.BytesIO(res.content)).convert("RGB")
+        w, h = img.size
+        img = img.crop((0, 0, w, h - 30)) # 하단 로고 크롭
+        return img.resize((380, 380))
+    except Exception:
+        return Image.new("RGB", (380, 380), color=(230, 235, 245))
+
 def create_4cut_comic_image(comic_data, article_title):
-    img_w, img_h = 800, 950
-    image = Image.new("RGB", (img_w, img_h), color=(252, 252, 253))
+    img_w, img_h = 820, 890
+    image = Image.new("RGB", (img_w, img_h), color=(255, 255, 255))
     draw = ImageDraw.Draw(image)
 
-    f_maintitle = get_korean_font(18)
-    f_cutnum = get_korean_font(14)
-    f_cuttitle = get_korean_font(13)
-    f_desc = get_korean_font(12)
-    f_speech = get_korean_font(13)
-    f_catch = get_korean_font(20)
-    f_badge = get_korean_font(12)
+    f_maintitle = get_korean_font(16)
+    f_speech = get_korean_font(12)
+    f_cutnum = get_korean_font(11)
 
-    # 상단 타이틀 바
-    draw.rectangle([20, 20, img_w - 20, 70], fill=(20, 20, 20))
-    draw.text((35, 33), f"🎬 [4컷 툰] {article_title[:38]}...", fill=(255, 255, 255), font=f_maintitle)
+    # 상단 웹툰 타이틀 바
+    draw.rectangle([20, 20, img_w - 20, 70], fill=(15, 23, 42))
+    draw.text((35, 33), f"🎬 [4컷 웹툰] {article_title[:42]}...", fill=(255, 255, 255), font=f_maintitle)
 
     margin = 20
-    top_offset = 85
-    panel_area_h = 620
-    cut_w = (img_w - margin * 3) // 2
-    cut_h = (panel_area_h - margin * 3) // 2
+    top_offset = 90
+    panel_size = 375
 
-    cuts_bbox = [
-        [margin, top_offset, margin + cut_w, top_offset + cut_h],
-        [margin * 2 + cut_w, top_offset, img_w - margin, top_offset + cut_h],
-        [margin, top_offset + cut_h + margin, margin + cut_w, top_offset + cut_h * 2 + margin],
-        [margin * 2 + cut_w, top_offset + cut_h + margin, img_w - margin, top_offset + cut_h * 2 + margin]
+    positions = [
+        (margin, top_offset),
+        (img_w - margin - panel_size, top_offset),
+        (margin, top_offset + panel_size + margin),
+        (img_w - margin - panel_size, top_offset + panel_size + margin)
     ]
 
     for i in range(1, 5):
-        bx1, by1, bx2, by2 = cuts_bbox[i-1]
-        # 각 만화 칸 (흰색 배경에 검은 테두리 - 웹툰 스타일)
-        draw.rectangle([bx1, by1, bx2, by2], fill=(255, 255, 255), outline=(30, 30, 30), width=3)
+        px, py = positions[i-1]
         
+        # 진짜 AI 일러스트 그림 가져오기
+        panel_prompt = comic_data.get(f"cut{i}_prompt", f"webtoon panel {i}")
+        panel_img = fetch_ai_panel_image(panel_prompt)
+        image.paste(panel_img, (px, py))
+
+        # 패널 테두리
+        draw.rectangle([px, py, px + panel_size, py + panel_size], outline=(30, 41, 59), width=3)
+
         # 컷 번호 뱃지
-        draw.rectangle([bx1 + 10, by1 + 10, bx1 + 55, by1 + 32], fill=(2, 132, 199))
-        draw.text((bx1 + 16, by1 + 13), f"{i}컷", fill=(255, 255, 255), font=f_cutnum)
+        draw.rectangle([px + 10, py + 10, px + 45, py + 28], fill=(2, 132, 199))
+        draw.text((px + 15, py + 12), f"{i}컷", fill=(255, 255, 255), font=f_cutnum)
+
+        # 하단 말풍선 오버레이 (그림 위 하단에 둥근 대화창 배치)
+        speech_text = comic_data.get(f"cut{i}_speech", "")
+        sb_x1, sb_y1 = px + 12, py + panel_size - 75
+        sb_x2, sb_y2 = px + panel_size - 12, py + panel_size - 12
         
-        # 컷 제목
-        cut_t = comic_data.get(f"cut{i}_title", "")
-        draw.text((bx1 + 65, by1 + 14), cut_t[:14], fill=(15, 23, 42), font=f_cuttitle)
-        draw.line([(bx1 + 10, by1 + 40), (bx2 - 10, by1 + 40)], fill=(220, 224, 230), width=2)
+        draw.rounded_rectangle([sb_x1, sb_y1, sb_x2, sb_y2], radius=8, fill=(255, 255, 255), outline=(30, 41, 59), width=2)
+        draw_wrapped_text(draw, f"💬 {speech_text}", f_speech, (15, 23, 42), sb_x1 + 10, sb_y1 + 8, (sb_x2 - sb_x1) - 20)
 
-        # 컷 상황 설명
-        cut_d = comic_data.get(f"cut{i}_desc", "")
-        draw_wrapped_text(draw, f"상황: {cut_d}", f_desc, (100, 116, 139), bx1 + 15, by1 + 50, cut_w - 30)
-
-        # 말풍선 영역 (웹툰 스타일 둥근 박스)
-        speech_t = comic_data.get(f"cut{i}_speech", "")
-        sb_x1, sb_y1 = bx1 + 15, by2 - 95
-        sb_x2, sb_y2 = bx2 - 15, by2 - 15
-        draw.rounded_rectangle([sb_x1, sb_y1, sb_x2, sb_y2], radius=10, fill=(241, 245, 249), outline=(30, 41, 59), width=2)
-        draw_wrapped_text(draw, f"💬 \"{speech_t}\"", f_speech, (15, 23, 42), sb_x1 + 10, sb_y1 + 10, (sb_x2 - sb_x1) - 20)
-
-    # 하단 핵심 메시지 영역
-    y_msg = top_offset + panel_area_h + 10
-    draw.rectangle([20, y_msg, img_w - 20, img_h - 20], fill=(245, 247, 250), outline=(200, 205, 215), width=2)
-    draw.text((40, y_msg + 15), "📌 [만화 핵심 메시지]", fill=(2, 132, 199), font=f_badge)
-    
-    catch_text = comic_data.get("catchphrase", article_title)
-    draw_wrapped_text(draw, f"\"{catch_text}\"", f_catch, (15, 23, 42), 40, y_msg + 42, img_w - 80, line_spacing=6)
+    # 전체 테두리
+    draw.rectangle([0, 0, img_w - 1, img_h - 1], outline=(30, 41, 59), width=3)
 
     buf = io.BytesIO()
     image.save(buf, format="PNG")
@@ -308,7 +305,7 @@ def create_4cut_comic_image(comic_data, article_title):
     return buf
 
 # ---------------------------------------------------------
-# [형식 2] 포스터 생성 함수 (상단 일러스트 + 하단 굵직한 핵심 메시지)
+# [형식 2] 포스터 생성 함수
 # ---------------------------------------------------------
 def generate_poster_data(title, desc, user_feedback, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
@@ -395,7 +392,6 @@ def create_infographic_image(title, desc):
     draw.text((45, 40), "📊 [인포그래픽 통계 분석]", fill=(134, 239, 172), font=f_sub)
     draw_wrapped_text(draw, title[:40], f_title, (255, 255, 255), 45, 68, img_w - 90)
 
-    # 좌측: 막대그래프 구역
     gx, gy = 50, 160
     draw.rectangle([gx, gy, gx + 330, gy + 320], fill=(255, 255, 255), outline=(187, 247, 208), width=2)
     draw.text((gx + 20, gy + 15), "📈 주요 지표 및 순위 비교", fill=(20, 83, 45), font=f_sub)
@@ -411,7 +407,6 @@ def create_infographic_image(title, desc):
         draw.rectangle([gx + 130, by + 4, gx + 130 + b_len, by + 22], fill=b_color)
         by += 50
 
-    # 우측: 원형 도넛 차트 구역
     px, py = 410, 160
     draw.rectangle([px, py, img_w - 50, py + 320], fill=(255, 255, 255), outline=(187, 247, 208), width=2)
     draw.text((px + 20, py + 15), "🎯 비율 구성비 (분야별)", fill=(20, 83, 45), font=f_sub)
@@ -423,7 +418,6 @@ def create_infographic_image(title, desc):
     draw.ellipse([px + 120, py + 105, px + 200, py + 185], fill=(255, 255, 255))
     draw.text((px + 138, py + 135), "TOTAL", fill=(22, 101, 52), font=f_sub)
 
-    # 하단: 종합 인사이트
     hx, hy = 50, 510
     draw.rectangle([hx, hy, img_w - 50, img_h - 50], fill=(255, 255, 255), outline=(187, 247, 208), width=2)
     draw.text((hx + 20, hy + 20), "📝 [인포그래픽 종합 인사이트 및 요약]", fill=(20, 83, 45), font=f_sub)
@@ -570,7 +564,7 @@ elif st.session_state['step'] == 'result':
                 else:
                     selected_article = article_options[selected_label]
                     
-                    with st.spinner("🔄 고품질 콘텐츠를 렌더링 중입니다... (예상 소요 시간: 약 5~10초)"):
+                    with st.spinner("🔄 진짜 AI 일러스트 4컷 만화와 디자인을 렌더링 중입니다... (예상 소요 시간: 약 5~10초)"):
                         if content_format == "만화 (컷툰/웹툰)":
                             comic_data = generate_comic_scenario(selected_article['title'], selected_article['desc'], "", gemini_key)
                             st.session_state['comic_data'] = comic_data
