@@ -197,9 +197,6 @@ def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=6):
         curr_y += font.size + line_spacing
     return curr_y
 
-# ---------------------------------------------------------
-# [핵심] Gemini로 고품질 콘텐츠 데이터(일러스트 프롬프트 + 캐치프레이즈) 생성
-# ---------------------------------------------------------
 def generate_ai_content_data(title, desc, content_format, user_feedback, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     
@@ -246,11 +243,14 @@ def generate_ai_content_data(title, desc, content_format, user_feedback, api_key
 
 def create_final_media_content(catchphrase, desc, content_format, image_prompt):
     encoded_prompt = urllib.parse.quote(image_prompt)
-    ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=700&height=550&nologo=true&enhance=true"
+    ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=700&height=600&nologo=true&enhance=true"
     
     try:
         res = requests.get(ai_image_url, timeout=25)
         ai_img = Image.open(io.BytesIO(res.content)).convert("RGB")
+        w, h = ai_img.size
+        ai_img = ai_img.crop((0, 0, w, h - 50))
+        ai_img = ai_img.resize((700, 550))
     except Exception:
         ai_img = Image.new("RGB", (700, 550), color=(230, 235, 245))
 
@@ -400,11 +400,9 @@ elif st.session_state['step'] == 'result':
 
             current_article_key = f"{selected_label}_{content_format}"
             if 'last_art_key' not in st.session_state or st.session_state['last_art_key'] != current_article_key:
-                # 기사가 바뀌면 이전 생성 결과 초기화
                 st.session_state.pop('image_bytes', None)
                 st.session_state['last_art_key'] = current_article_key
 
-            # 처음에 딱 존재하는 생성 버튼
             submit_plan = st.button("기사 맞춤형 콘텐츠 생성하기", use_container_width=True)
 
             if submit_plan:
@@ -437,7 +435,6 @@ elif st.session_state['step'] == 'result':
                         st.session_state['content_format'] = content_format
                         st.session_state['image_bytes'] = image_bytes
 
-            # 이미지가 생성된 이후에만 나타나는 대화형 수정 피드백 영역
             if 'image_bytes' in st.session_state and st.session_state['image_bytes']:
                 st.markdown('<div class="image-preview-container">', unsafe_allow_html=True)
                 st.markdown(f"### 🎬 [{st.session_state['content_format']}] 생성된 맞춤형 결과물")
@@ -448,8 +445,7 @@ elif st.session_state['step'] == 'result':
                 st.image(st.session_state['image_bytes'], use_container_width=True, caption=f"{art['title']} - {st.session_state['content_format']}")
                 
                 st.markdown("---")
-                st.markdown("#### 💬 AI와 대화하듯 수정 요구사항 남기기")
-                st.caption("예: '더 밝고 따뜻한 색감으로 바꿔줘', '핵심 문구를 더 짧고 강렬하게 수정해줘'")
+                st.markdown("#### 💬 AI에게 물어보기")
                 
                 user_feedback = st.text_input(
                     "수정 요청 사항",
@@ -462,7 +458,7 @@ elif st.session_state['step'] == 'result':
                 with col_ref:
                     if st.button("🔄 피드백 반영하여 다시 생성하기", use_container_width=True):
                         if user_feedback.strip():
-                            with st.spinner("💬 수정 요청을 반영하여 이미지를 다시 다듬고 있습니다..."):
+                            with st.spinner("💬 AI가 수정 요청을 반영하여 이미지를 다듬고 있습니다..."):
                                 ai_data = generate_ai_content_data(
                                     art['title'],
                                     art['desc'],
