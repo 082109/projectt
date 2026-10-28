@@ -413,7 +413,8 @@ elif st.session_state['step'] == 'result':
                 else:
                     selected_article = article_options[selected_label]
                     
-                    with st.spinner(f"⏳ 고품질 AI 일러스트와 '{content_format}' 디자인을 렌더링 중입니다..."):
+                    # 둥글게 회전하는 아이콘과 예상 소요 시간 안내 추가
+                    with st.spinner("🔄 고품질 AI 일러스트와 디자인을 렌더링 중입니다... (예상 소요 시간: 약 5~10초)"):
                         ai_data = generate_ai_content_data(
                             selected_article['title'],
                             selected_article['desc'],
@@ -458,7 +459,8 @@ elif st.session_state['step'] == 'result':
                 with col_ref:
                     if st.button("🔄 피드백 반영하여 다시 생성하기", use_container_width=True):
                         if user_feedback.strip():
-                            with st.spinner("💬 AI가 수정 요청을 반영하여 이미지를 다듬고 있습니다..."):
+                            # 피드백 반영 시에도 회전 아이콘과 예상 소요 시간 안내 추가
+                            with st.spinner("🔄 AI가 수정 요청을 반영하여 이미지를 다듬고 있습니다... (예상 소요 시간: 약 5~10초)"):
                                 ai_data = generate_ai_content_data(
                                     art['title'],
                                     art['desc'],
