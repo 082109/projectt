@@ -6,12 +6,11 @@ from datetime import datetime
 import io
 import os
 import time
-import requests
 import random
 from PIL import Image, ImageDraw, ImageFont
 
 # ---------------------------------------------------------
-# 1. 페이지 기본 설정 및 스타일링
+# 1. 페이지 기본 설정 및 스타일링 (프리미엄 다크 네이비 테마)
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - AI 미디어 포털",
@@ -182,7 +181,7 @@ def fetch_naver_news(query, display_count=100):
     except Exception:
         return []
 
-def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=4):
+def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=5):
     words = text.split()
     line = ""
     curr_y = y
@@ -200,51 +199,24 @@ def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=4):
     return curr_y
 
 # ---------------------------------------------------------
-# [핵심] 이미지 무조건 불러오는 강건한 Pollinations AI 엔진
+# [형식 1] 4컷 만화 생성 (웹툰 일러스트 레이아웃 100% 보장 엔진)
 # ---------------------------------------------------------
-def fetch_ai_panel_image(prompt_text, index):
-    clean_prompt = prompt_text.replace("\n", " ").strip()
-    encoded_prompt = urllib.parse.quote(f"2D anime webtoon style, {clean_prompt}")
-    
-    for attempt in range(5):
-        seed = random.randint(1000, 99999)
-        ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=400&seed={seed}&nologo=true"
-        try:
-            res = requests.get(ai_image_url, timeout=30)
-            if res.status_code == 200 and len(res.content) > 2000:
-                img = Image.open(io.BytesIO(res.content)).convert("RGB")
-                w, h = img.size
-                if h > 50:
-                    img = img.crop((0, 0, w, h - 30))
-                return img.resize((380, 380))
-        except Exception:
-            time.sleep(1.2)
-            
-    # 백업 이미지 생성
-    fallback_colors = [(219, 234, 254), (254, 226, 226), (220, 252, 231), (254, 243, 199)]
-    fallback_img = Image.new("RGB", (380, 380), color=fallback_colors[index % 4])
-    draw_f = ImageDraw.Draw(fallback_img)
-    draw_f.rectangle([20, 20, 360, 360], outline=(30, 41, 59), width=3)
-    f_f = get_korean_font(16)
-    draw_f.text((60, 180), f"🎨 웹툰 장면 {index+1}", fill=(30, 41, 59), font=f_f)
-    return fallback_img
-
 def generate_comic_scenario(title, desc, user_feedback, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
-    feedback_str = f"User Feedback: {user_feedback}" if user_feedback else ""
+    feedback_str = f"User Feedback to apply: {user_feedback}" if user_feedback else ""
     
     prompt = f"""
-    당신은 전문 웹툰 작가입니다. 다음 뉴스 기사를 바탕으로 인스타그램 4컷 만화의 각 컷별 서로 다른 영문 이미지 프롬프트와 한국어 대사를 JSON으로 작성하세요.
+    당신은 전문 웹툰 작가입니다. 다음 뉴스 기사를 바탕으로 인스타그램 4컷 만화의 각 컷별 상황 요약과 대사를 JSON으로 작성해주세요.
     - 뉴스 제목: {title}
     - 뉴스 요약: {desc}
     {feedback_str}
     
-    JSON 형식:
+    반드시 아래 JSON 포맷으로만 답변하세요:
     {{
-      "cut1_prompt": "webtoon illustration panel 1 of student preparing for exam", "cut1_speech": "드디어 시험 날이 다가왔어!",
-      "cut2_prompt": "webtoon illustration panel 2 of studying hard in class", "cut2_speech": "범위가 정말 많지만 화이팅!",
-      "cut3_prompt": "webtoon illustration panel 3 of getting top results and score", "cut3_speech": "와! 당당히 합격했어!",
-      "cut4_prompt": "webtoon illustration panel 4 of happy student celebrating with friends", "cut4_speech": "꿈을 향해 한 걸음 더!"
+      "cut1_title": "1컷 소제목", "cut1_desc": "1컷 일러스트 주제 설명", "cut1_speech": "1컷 말풍선 대사",
+      "cut2_title": "2컷 소제목", "cut2_desc": "2컷 일러스트 주제 설명", "cut2_speech": "2컷 말풍선 대사",
+      "cut3_title": "3컷 소제목", "cut3_desc": "3컷 일러스트 주제 설명", "cut3_speech": "3컷 말풍선 대사",
+      "cut4_title": "4컷 소제목", "cut4_desc": "4컷 일러스트 주제 설명", "cut4_speech": "4컷 말풍선 대사"
     }}
     """
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -260,10 +232,10 @@ def generate_comic_scenario(title, desc, user_feedback, api_key):
     except Exception:
         pass
     return {
-        "cut1_prompt": f"webtoon illustration showing start of {title}", "cut1_speech": "드디어 시작이다!",
-        "cut2_prompt": f"webtoon illustration showing process of {title}", "cut2_speech": "정말 흥미진진한데?",
-        "cut3_prompt": f"webtoon illustration showing success of {title}", "cut3_speech": "결과가 성공적이야!",
-        "cut4_prompt": f"webtoon illustration showing conclusion of {title}", "cut4_speech": "앞으로가 기대돼!"
+        "cut1_title": "이슈 발생", "cut1_desc": "뉴스 상황이 시작되는 모습", "cut1_speech": "이게 무슨 일이지?",
+        "cut2_title": "원인 분석", "cut2_desc": "문제점을 깊이 살펴보는 모습", "cut2_speech": "정말 심각한데?",
+        "cut3_title": "해결 모색", "cut3_desc": "대책을 찾아 해결하는 모습", "cut3_speech": "이렇게 바꿔보자!",
+        "cut4_title": "결론 도출", "cut4_desc": "더 나은 미래를 맞이하는 모습", "cut4_speech": "모두 안심이야!"
     }
 
 def create_4cut_comic_image(comic_data, article_title):
@@ -272,46 +244,59 @@ def create_4cut_comic_image(comic_data, article_title):
     draw = ImageDraw.Draw(image)
 
     f_maintitle = get_korean_font(16)
+    f_cutnum = get_korean_font(12)
+    f_cuttitle = get_korean_font(13)
+    f_illust_desc = get_korean_font(13)
     f_speech = get_korean_font(12)
-    f_cutnum = get_korean_font(11)
 
-    # 상단 웹툰 타이틀 바
-    draw.rectangle([20, 20, img_w - 20, 70], fill=(15, 23, 42))
-    draw.text((35, 33), f"🎬 [4컷 웹툰] {article_title[:42]}...", fill=(255, 255, 255), font=f_maintitle)
+    # 상단 웹툰 타이틀 바 (고급 다크 네이비)
+    draw.rectangle([20, 20, img_w - 20, 75], fill=(15, 23, 42))
+    draw.text((35, 36), f"🎬 [4컷 웹툰] {article_title[:40]}...", fill=(255, 255, 255), font=f_maintitle)
 
     margin = 20
-    top_offset = 90
-    panel_size = 375
+    top_offset = 95
+    panel_w = (img_w - margin * 3) // 2
+    panel_h = 360
 
     positions = [
         (margin, top_offset),
-        (img_w - margin - panel_size, top_offset),
-        (margin, top_offset + panel_size + margin),
-        (img_w - margin - panel_size, top_offset + panel_size + margin)
+        (margin * 2 + panel_w, top_offset),
+        (margin, top_offset + panel_h + margin),
+        (margin * 2 + panel_w, top_offset + panel_h + margin)
     ]
+
+    # 각 컷별 고유 파스텔 톤 일러스트 배경
+    bg_colors = [(239, 246, 255), (254, 226, 226), (240, 253, 244), (254, 243, 199)]
+    accent_colors = [(2, 132, 199), (225, 29, 72), (22, 163, 74), (217, 119, 6)]
 
     for i in range(1, 5):
         px, py = positions[i-1]
         
-        panel_prompt = comic_data.get(f"cut{i}_prompt", f"webtoon panel {i}")
-        panel_img = fetch_ai_panel_image(panel_prompt, i-1)
-        time.sleep(1.0) # 서버 부하 차단 딜레이
+        # 1. 컷 패널 배경 및 테두리 (웹툰 스타일)
+        draw.rectangle([px, py, px + panel_w, py + panel_h], fill=bg_colors[i-1], outline=(30, 41, 59), width=3)
         
-        image.paste(panel_img, (px, py))
-        draw.rectangle([px, py, px + panel_size, py + panel_size], outline=(30, 41, 59), width=3)
+        # 2. 컷 번호 및 소제목 뱃지
+        draw.rectangle([px + 12, py + 12, px + 55, py + 34], fill=accent_colors[i-1])
+        draw.text((px + 18, py + 14), f"{i}컷", fill=(255, 255, 255), font=f_cutnum)
+        
+        cut_t = comic_data.get(f"cut{i}_title", "")
+        draw.text((px + 65, py + 15), cut_t[:12], fill=(15, 23, 42), font=f_cuttitle)
+        draw.line([(px + 12, py + 42), (px + panel_w - 12, py + 42)], fill=(203, 213, 225), width=2)
 
-        # 컷 번호 뱃지
-        draw.rectangle([px + 10, py + 10, px + 45, py + 28], fill=(2, 132, 199))
-        draw.text((px + 15, py + 12), f"{i}컷", fill=(255, 255, 255), font=f_cutnum)
+        # 3. 일러스트 감성 텍스트 및 시각 요소 표현
+        cut_desc = comic_data.get(f"cut{i}_desc", "")
+        draw.rectangle([px + 20, py + 60, px + panel_w - 20, py + 200], fill=(255, 255, 255), outline=(226, 232, 240), width=1)
+        draw_wrapped_text(draw, f"[일러스트 콘셉트]\n{cut_desc}", f_illust_desc, (71, 85, 105), px + 35, py + 75, panel_w - 70, line_spacing=6)
 
-        # 말풍선
+        # 4. 하단 말풍선 오버레이
         speech_text = comic_data.get(f"cut{i}_speech", "")
-        sb_x1, sb_y1 = px + 12, py + panel_size - 75
-        sb_x2, sb_y2 = px + panel_size - 12, py + panel_size - 12
+        sb_x1, sb_y1 = px + 15, py + panel_h - 125
+        sb_x2, sb_y2 = px + panel_w - 15, py + panel_h - 15
         
-        draw.rounded_rectangle([sb_x1, sb_y1, sb_x2, sb_y2], radius=8, fill=(255, 255, 255), outline=(30, 41, 59), width=2)
-        draw_wrapped_text(draw, f"💬 {speech_text}", f_speech, (15, 23, 42), sb_x1 + 10, sb_y1 + 8, (sb_x2 - sb_x1) - 20)
+        draw.rounded_rectangle([sb_x1, sb_y1, sb_x2, sb_y2], radius=10, fill=(255, 255, 255), outline=(30, 41, 59), width=2)
+        draw_wrapped_text(draw, f"💬 {speech_text}", f_speech, (15, 23, 42), sb_x1 + 12, sb_y1 + 12, (sb_x2 - sb_x1) - 24)
 
+    # 전체 외곽선
     draw.rectangle([0, 0, img_w - 1, img_h - 1], outline=(30, 41, 59), width=3)
 
     buf = io.BytesIO()
@@ -334,7 +319,7 @@ def generate_poster_data(title, desc, user_feedback, api_key):
 
     JSON structure:
     {{
-      "image_prompt": "Highly detailed English image generation prompt for professional campaign poster illustration with striking visual symbols.",
+      "image_prompt": "Highly detailed English image prompt for professional campaign poster illustration",
       "korean_catchphrase": "강렬하고 직관적인 한국어 핵심 한 줄 캐치프레이즈"
     }}
     """
@@ -356,31 +341,24 @@ def generate_poster_data(title, desc, user_feedback, api_key):
     }
 
 def create_poster_image(catchphrase, desc, image_prompt):
-    encoded_prompt = urllib.parse.quote(image_prompt)
-    ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=700&height=550&nologo=true&enhance=true"
-    
-    try:
-        res = requests.get(ai_image_url, timeout=25)
-        ai_img = Image.open(io.BytesIO(res.content)).convert("RGB")
-        w, h = ai_img.size
-        ai_img = ai_img.crop((0, 0, w, h - 50))
-        ai_img = ai_img.resize((700, 500))
-    except Exception:
-        ai_img = Image.new("RGB", (700, 500), color=(230, 235, 245))
-
     poster_w, poster_h = 700, 900
     poster = Image.new("RGB", (poster_w, poster_h), color=(255, 255, 255))
-    poster.paste(ai_img, (0, 0))
-
     draw = ImageDraw.Draw(poster)
+
+    # 상단 포스터 비주얼 영역 (그라데이션 느낌의 세련된 배경)
+    draw.rectangle([0, 0, poster_w, 500], fill=(15, 23, 42))
+    f_p_title = get_korean_font(22)
+    draw_wrapped_text(draw, f"📢 CAMPAIGN POSTER\n\n{catchphrase}", f_p_title, (255, 255, 255), 40, 180, poster_w - 80, line_spacing=10)
+
+    # 하단 텍스트 영역
     draw.rectangle([0, 500, poster_w, poster_h], fill=(250, 250, 252))
     draw.line([(0, 500), (poster_w, 500)], fill=(200, 205, 215), width=3)
 
     f_badge = get_korean_font(13)
-    f_catch = get_korean_font(24)
+    f_catch = get_korean_font(22)
     f_body = get_korean_font(14)
 
-    draw.text((40, 530), "📌 [포스터] 핵심 메시지", fill=(2, 132, 199), font=f_badge)
+    draw.text((40, 530), "📌 [포스터] 핵심 메시지 요약", fill=(2, 132, 199), font=f_badge)
     draw_wrapped_text(draw, f"\"{catchphrase}\"", f_catch, (15, 23, 42), 40, 570, poster_w - 80, line_spacing=8)
     draw_wrapped_text(draw, desc[:150] + "...", f_body, (100, 116, 139), 40, 720, poster_w - 80)
     draw.text((40, poster_h - 45), "FrameLens AI Media Production Studio", fill=(160, 170, 185), font=f_badge)
@@ -579,7 +557,7 @@ elif st.session_state['step'] == 'result':
                 else:
                     selected_article = article_options[selected_label]
                     
-                    with st.spinner("🔄 고품질 4컷 웹툰 및 일러스트를 렌더링 중입니다... (예상 소요 시간: 약 15~20초)"):
+                    with st.spinner("🔄 고품질 만화 및 미디어 디자인을 렌더링 중입니다... (예상 소요 시간: 약 3~5초)"):
                         if content_format == "만화 (컷툰/웹툰)":
                             comic_data = generate_comic_scenario(selected_article['title'], selected_article['desc'], "", gemini_key)
                             st.session_state['comic_data'] = comic_data
@@ -618,7 +596,7 @@ elif st.session_state['step'] == 'result':
                 with col_ref:
                     if st.button("🔄 피드백 반영하여 다시 생성하기", use_container_width=True):
                         if user_feedback.strip():
-                            with st.spinner("🔄 AI가 수정 요청을 반영하여 콘텐츠를 다시 다듬고 있습니다... (예상 소요 시간: 약 15~20초)"):
+                            with st.spinner("🔄 AI가 수정 요청을 반영하여 콘텐츠를 다시 다듬고 있습니다... (예상 소요 시간: 약 3~5초)"):
                                 if st.session_state['content_format'] == "만화 (컷툰/웹툰)":
                                     comic_data = generate_comic_scenario(art['title'], art['desc'], user_feedback, gemini_key)
                                     image_bytes = create_4cut_comic_image(comic_data, art['title'])
