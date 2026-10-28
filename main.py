@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 import io
 import os
+import time
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
@@ -198,14 +199,14 @@ def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=4):
     return curr_y
 
 # ---------------------------------------------------------
-# [형식 1] 4컷 만화 생성 (진짜 AI 일러스트 4장 생성 후 합성)
+# [형식 1] 4컷 만화 생성 (진짜 AI 일러스트 4장 개별 생성 및 딜레이 적용)
 # ---------------------------------------------------------
 def generate_comic_scenario(title, desc, user_feedback, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     feedback_str = f"User Feedback to apply: {user_feedback}" if user_feedback else ""
     
     prompt = f"""
-    당신은 전문 웹툰 작가입니다. 다음 뉴스 기사를 바탕으로 인스타그램 4컷 만화의 각 컷별 영어 이미지 생성 프롬프트와 한국어 대사를 JSON으로 작성해주세요.
+    당신은 전문 웹툰 작가입니다. 다음 뉴스 기사를 바탕으로 인스타그램 4컷 만화의 각 컷별 서로 다른 구체적인 영어 이미지 생성 프롬프트와 한국어 대사를 JSON으로 작성해주세요.
     - 뉴스 제목: {title}
     - 뉴스 요약: {desc}
     {feedback_str}
@@ -240,14 +241,17 @@ def generate_comic_scenario(title, desc, user_feedback, api_key):
 def fetch_ai_panel_image(prompt_text):
     encoded_prompt = urllib.parse.quote(prompt_text)
     ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=400&nologo=true&enhance=true"
-    try:
-        res = requests.get(ai_image_url, timeout=20)
-        img = Image.open(io.BytesIO(res.content)).convert("RGB")
-        w, h = img.size
-        img = img.crop((0, 0, w, h - 30)) # 하단 로고 크롭
-        return img.resize((380, 380))
-    except Exception:
-        return Image.new("RGB", (380, 380), color=(230, 235, 245))
+    for _ in range(3): # 실패 시 최대 3번 재시도
+        try:
+            res = requests.get(ai_image_url, timeout=25)
+            if res.status_code == 200:
+                img = Image.open(io.BytesIO(res.content)).convert("RGB")
+                w, h = img.size
+                img = img.crop((0, 0, w, h - 30))
+                return img.resize((380, 380))
+        except Exception:
+            time.sleep(1)
+    return Image.new("RGB", (380, 380), color=(240, 245, 250))
 
 def create_4cut_comic_image(comic_data, article_title):
     img_w, img_h = 820, 890
@@ -276,9 +280,11 @@ def create_4cut_comic_image(comic_data, article_title):
     for i in range(1, 5):
         px, py = positions[i-1]
         
-        # 진짜 AI 일러스트 그림 가져오기
+        # 각 컷별 AI 일러스트 생성 요청 (서로 다른 프롬프트 적용 및 부하 방지 딜레이)
         panel_prompt = comic_data.get(f"cut{i}_prompt", f"webtoon panel {i}")
         panel_img = fetch_ai_panel_image(panel_prompt)
+        time.sleep(0.8) # 컷마다 안정적인 생성을 위한 딜레이
+        
         image.paste(panel_img, (px, py))
 
         # 패널 테두리
@@ -288,7 +294,7 @@ def create_4cut_comic_image(comic_data, article_title):
         draw.rectangle([px + 10, py + 10, px + 45, py + 28], fill=(2, 132, 199))
         draw.text((px + 15, py + 12), f"{i}컷", fill=(255, 255, 255), font=f_cutnum)
 
-        # 하단 말풍선 오버레이 (그림 위 하단에 둥근 대화창 배치)
+        # 하단 말풍선 오버레이
         speech_text = comic_data.get(f"cut{i}_speech", "")
         sb_x1, sb_y1 = px + 12, py + panel_size - 75
         sb_x2, sb_y2 = px + panel_size - 12, py + panel_size - 12
@@ -564,7 +570,7 @@ elif st.session_state['step'] == 'result':
                 else:
                     selected_article = article_options[selected_label]
                     
-                    with st.spinner("🔄 진짜 AI 일러스트 4컷 만화와 디자인을 렌더링 중입니다... (예상 소요 시간: 약 5~10초)"):
+                    with st.spinner("🔄 진짜 AI 일러스트 4컷 만화와 디자인을 렌더링 중입니다... (예상 소요 시간: 약 10~15초)"):
                         if content_format == "만화 (컷툰/웹툰)":
                             comic_data = generate_comic_scenario(selected_article['title'], selected_article['desc'], "", gemini_key)
                             st.session_state['comic_data'] = comic_data
@@ -603,7 +609,7 @@ elif st.session_state['step'] == 'result':
                 with col_ref:
                     if st.button("🔄 피드백 반영하여 다시 생성하기", use_container_width=True):
                         if user_feedback.strip():
-                            with st.spinner("🔄 AI가 수정 요청을 반영하여 콘텐츠를 다시 다듬고 있습니다... (예상 소요 시간: 약 5~10초)"):
+                            with st.spinner("🔄 AI가 수정 요청을 반영하여 콘텐츠를 다시 다듬고 있습니다... (예상 소요 시간: 약 10~15초)"):
                                 if st.session_state['content_format'] == "만화 (컷툰/웹툰)":
                                     comic_data = generate_comic_scenario(art['title'], art['desc'], user_feedback, gemini_key)
                                     image_bytes = create_4cut_comic_image(comic_data, art['title'])
