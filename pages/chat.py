@@ -5,28 +5,27 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 다크 네이비 프리미엄 스타일링
+# 1. 페이지 설정 및 게임 전용 네온 아케이드 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - AI 뉴스 예능 스튜디오",
-    page_icon="🎮",
+    page_icon="🕹️",
     layout="wide"
 )
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
 
     .stApp {
-        background-color: #080c14;
+        background: radial-gradient(circle at center, #0f172a 0%, #050811 100%);
         color: #f3f4f6;
         font-family: 'Noto Serif KR', serif !important;
     }
     
     section[data-testid="stSidebar"] {
-        background-color: #172033 !important;
-        border-right: 1px solid #334155 !important;
-        font-family: 'Noto Serif KR', serif !important;
+        background-color: #0b1120 !important;
+        border-right: 1px solid #1e293b !important;
     }
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] div, 
@@ -37,108 +36,116 @@ st.markdown("""
     }
     [data-testid="stSidebarNav"] a {
         color: #ffffff !important;
-        background-color: rgba(30, 41, 59, 0.9) !important;
+        background-color: rgba(30, 41, 59, 0.8) !important;
         border-radius: 10px !important;
         margin-bottom: 6px !important;
         padding: 10px 14px !important;
     }
     [data-testid="stSidebarNav"] a[aria-current="page"] {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
         color: #ffffff !important;
-        border: 1px solid #38bdf8 !important;
+        border: 1px solid #a78bfa !important;
     }
 
-    .hero-title {
-        font-family: 'Noto Serif KR', serif !important;
-        font-size: 3.5rem;
-        font-weight: 900;
+    /* 게임 로비 타이틀 (오락실 아케이드 네온 폰트 느낌) */
+    .arcade-title {
+        font-family: 'Black Han Sans', sans-serif !important;
+        font-size: 3.8rem;
+        font-weight: 400;
         color: #ffffff;
         text-align: center;
-        margin-top: 30px;
-        margin-bottom: 12px;
-        letter-spacing: -1.5px;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        text-shadow: 0 0 20px rgba(124, 58, 237, 0.8), 0 0 40px rgba(79, 70, 229, 0.6);
+        letter-spacing: 2px;
     }
-    .hero-subtitle {
-        font-family: 'Noto Serif KR', serif !important;
-        color: #94a3b8;
-        font-size: 1.2rem;
+    .arcade-subtitle {
+        color: #a78bfa;
+        font-size: 1.25rem;
         text-align: center;
         margin-bottom: 40px;
-        font-weight: 300;
+        font-weight: 600;
+        text-shadow: 0 0 10px rgba(167, 139, 250, 0.4);
     }
 
-    /* 중앙 메인 대형 선택 카드 */
-    .center-card {
-        background: #0d1527;
-        border: 2px solid #1e293b;
-        border-radius: 24px;
-        padding: 40px 30px;
+    /* 리얼 게임 스타일 대형 카드 (마피아42 / 쿵쿵따 로비 카드) */
+    .game-lobby-card {
+        background: linear-gradient(145deg, #111827 0%, #0b1120 100%);
+        border: 3px solid #374151;
+        border-radius: 28px;
+        padding: 45px 30px;
         text-align: center;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        transition: all 0.3s ease;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(255, 255, 255, 0.03);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
     }
-    .center-card:hover {
-        border-color: #22d3ee;
-        box-shadow: 0 0 35px rgba(34, 211, 238, 0.3);
-        transform: translateY(-4px);
+    .game-lobby-card:hover {
+        border-color: #a78bfa;
+        box-shadow: 0 0 40px rgba(124, 58, 237, 0.5), inset 0 0 30px rgba(124, 58, 237, 0.2);
+        transform: translateY(-8px);
     }
-    .center-card-icon {
-        font-size: 3.5rem;
-        margin-bottom: 15px;
+    .card-icon-box {
+        font-size: 4.5rem;
+        margin-bottom: 20px;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
     }
-    .center-card-title {
-        font-size: 1.6rem;
-        font-weight: 800;
+    .card-title {
+        font-family: 'Black Han Sans', sans-serif !important;
+        font-size: 2rem;
         color: #ffffff;
-        margin-bottom: 12px;
+        margin-bottom: 15px;
+        letter-spacing: 1px;
     }
-    .center-card-desc {
-        color: #94a3b8;
-        font-size: 1rem;
-        line-height: 1.6;
-        margin-bottom: 25px;
+    .card-desc {
+        color: #9ca3af;
+        font-size: 1.05rem;
+        line-height: 1.7;
+        margin-bottom: 30px;
     }
 
-    .game-box {
-        background: #0d1527;
-        border: 2px solid #22d3ee;
-        border-radius: 20px;
-        padding: 30px;
+    /* 게임 내부 컨테이너 박스 */
+    .game-play-box {
+        background: linear-gradient(145deg, #111827 0%, #0b1120 100%);
+        border: 2.5px solid #4f46e5;
+        border-radius: 24px;
+        padding: 35px;
         margin: 0 auto 20px auto;
-        max-width: 900px;
-        box-shadow: 0 0 35px rgba(34, 211, 238, 0.2);
+        max-width: 950px;
+        box-shadow: 0 0 40px rgba(79, 70, 229, 0.3);
     }
 
     .chat-bubble-ai {
-        background-color: #1e293b;
-        border-left: 4px solid #38bdf8;
-        padding: 14px 18px;
-        border-radius: 10px;
-        margin-bottom: 12px;
-        font-size: 1.05rem;
+        background-color: #1f2937;
+        border-left: 5px solid #a78bfa;
+        padding: 16px 20px;
+        border-radius: 12px;
+        margin-bottom: 14px;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
+    /* 네온 입체 버튼 스타일 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
         color: #ffffff;
-        border: none;
-        border-radius: 14px;
-        font-weight: 700;
-        font-size: 1.1rem;
-        height: 52px;
-        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+        border: 2px solid #a78bfa;
+        border-radius: 16px;
+        font-weight: 800;
+        font-size: 1.15rem;
+        height: 55px;
+        box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
         transition: all 0.2s ease;
-        font-family: 'Noto Serif KR', serif !important;
+        font-family: 'Black Han Sans', sans-serif !important;
+        letter-spacing: 1px;
         width: 100%;
     }
     .stButton > button:hover {
-        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-        box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #8b5cf6 > 0%, #6366f1 100%);
+        box-shadow: 0 0 25px rgba(167, 139, 250, 0.8);
+        transform: translateY(-2px);
+        border-color: #ffffff;
     }
 
     h1, h2, h3, h4, label {
@@ -154,7 +161,7 @@ if 'total_score' not in st.session_state:
     st.session_state['total_score'] = 0
 
 if 'active_chat_game' not in st.session_state:
-    st.session_state['active_chat_game'] = None # 선택 전 상태 (중앙 메인 카드 노출)
+    st.session_state['active_chat_game'] = None # 로비 화면 노출
 
 if 'mafia_phase' not in st.session_state:
     st.session_state['mafia_phase'] = 'init'
@@ -280,71 +287,66 @@ def get_kung_reply(user_word, last_word, api_key):
     }
 
 # ---------------------------------------------------------
-# 3. 화면 UI 및 중앙 메인 선택 화면 구성
+# 3. 화면 UI 및 아케이드 스타일 로비 구성
 # ---------------------------------------------------------
-st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-title">🎮 AI 뉴스 예능 스튜디오</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="hero-subtitle">플레이할 게임 모드를 선택해 주세요! | 누적 점수: <span style="color: #22d3ee; font-weight: bold; font-size: 1.25rem;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
+st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
+st.markdown('<div class="arcade-title">🕹️ AI 예능 스튜디오 아케이드</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="arcade-subtitle">실시간 서바이벌 추리 & 퀴즈 쇼 | 누적 서바이벌 점수: <span style="color: #38bdf8; font-size: 1.3rem;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# [상태 1] 게임 미선택 시: 중앙 메인 카드 2개 배치
+# [로비 화면] 게임 미선택 시: 고품질 입체 아케이드 카드 2개 배치
 # ---------------------------------------------------------
 if st.session_state['active_chat_game'] is None:
     st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
-    m_col1, m_col2 = st.columns(2, gap="large")
+    l_col1, l_col2 = st.columns(2, gap="large")
 
-    with m_col1:
+    with l_col1:
         st.markdown("""
-        <div class="center-card">
-            <div>
-                <div class="center-card-icon">🕵️‍♂️</div>
-                <div class="center-card-title">마피아42: 스파이 잡기</div>
-                <div class="center-card-desc">
-                    버튼 한 번으로 실시간 랜덤 뉴스 기사가 출제되고,<br>
-                    가짜 뉴스를 몰래 유포하는 AI 스파이를<br>
-                    실시간 토론과 투표로 추리하고 처형하세요!
-                </div>
+        <div class="game-lobby-card">
+            <div class="card-icon-box">🕵️‍♂️</div>
+            <div class="card-title">마피아42: 스파이 잡기</div>
+            <div class="card-desc">
+                실시간 랜덤 뉴스 속에서 가짜 정보를 유포하는<br>
+                잠입 스파이(마피아)를 찾아내어 처형하라!<br>
+                치열한 증언 토론과 투표 서바이벌 게임.
             </div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-        if st.button("🕵️‍♂️ 마피아42 게임 시작하기", key="start_mafia_btn", use_container_width=True):
+        if st.button("🔴 마피아42 방 입장하기", key="lobby_mafia_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "mafia"
             st.rerun()
 
-    with m_col2:
+    with l_col2:
         st.markdown("""
-        <div class="center-card">
-            <div>
-                <div class="center-card-icon">🎤</div>
-                <div class="center-card-title">뉴스 키워드 쿵쿵따 쇼</div>
-                <div class="center-card-desc">
-                    버튼을 누르면 시사/경제/사회 키워드 중 하나가<br>
-                    랜덤 첫 제시어로 뚝딱 출제됩니다!<br>
-                    AI와 함께 릴레이 끝말잇기 대결을 즐기세요!
-                </div>
+        <div class="game-lobby-card">
+            <div class="card-icon-box">🎤</div>
+            <div class="card-title">뉴스 키워드 쿵쿵따 쇼</div>
+            <div class="card-desc">
+                시사, 경제, IT 대격돌 릴레이 끝말잇기 퀴즈 쇼!<br>
+                매 라운드 무작위로 튀어나오는 첫 제시어 속에서<br>
+                AI 쇼호스트와 맞서는 스피드 두뇌 대결.
             </div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-        if st.button("🎤 쿵쿵따 쇼 시작하기", key="start_kung_btn", use_container_width=True):
+        if st.button("🔵 쿵쿵따 쇼 방 입장하기", key="lobby_kung_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "kungkungta"
-            # 쿵쿵따 시작 시 랜덤 첫 제시어 자동 설정
             random_first_words = ["인공지능", "경제성장", "기후변화", "우주탐사", "디지털혁신", "글로벌무역", "스마트폰"]
             chosen_word = random.choice(random_first_words)
             st.session_state['kung_current_word'] = chosen_word
             st.session_state['kung_history'] = [
-                {"role": "ai", "text": f"반가워! 쿵쿵따 쇼를 시작할게. 이번 판의 랜덤 첫 제시어는 **'{chosen_word}'**이야! 자, 다음 단어를 이어줘!"}
+                {"role": "ai", "text": f"반가워! 쿵쿵따 쇼 스튜디오에 입장한 걸 환영해. 이번 판의 랜덤 첫 제시어는 **'{chosen_word}'**이야! 자, 다음 단어를 이어줘!"}
             ]
             st.rerun()
 
 # ---------------------------------------------------------
-# [상태 2] 게임 선택 후: 게임 진행 및 뒤로가기 버튼
+# [게임 플레이 화면]
 # ---------------------------------------------------------
 else:
     top_nav1, top_nav2 = st.columns([4, 1])
     with top_nav2:
-        if st.button("🏠 다른 게임 선택하기", use_container_width=True):
+        if st.button("🏠 로비로 돌아가기", use_container_width=True):
             st.session_state['active_chat_game'] = None
             st.session_state['mafia_phase'] = 'init'
             st.session_state['mafia_game_data'] = None
@@ -353,20 +355,20 @@ else:
     st.markdown("---")
 
     # ---------------------------------------------------------
-    # [게임 1] 마피아42 스타일 스파이 잡기 게임 (랜덤 뉴스 출제)
+    # [게임 1] 마피아42 스타일 스파이 잡기 게임
     # ---------------------------------------------------------
     if st.session_state['active_chat_game'] == "mafia":
-        st.markdown('<div class="game-box">', unsafe_allow_html=True)
-        st.markdown("### 🕵️‍♂️ [마피아42 모드] 랜덤 뉴스 스파이 추리 사건")
-        st.markdown("시민 플레이어들 속에 몰래 섞여 들어와 가짜 뉴스를 유포하는 **스파이(마피아)**를 찾아 처형하세요!")
+        st.markdown('<div class="game-play-box">', unsafe_allow_html=True)
+        st.markdown("### 🕵️‍♂️ [마피아42 서바이벌] 실시간 뉴스 스파이 추리")
+        st.markdown("시민들 사이에 숨어 거짓 증언을 내뱉는 **스파이**를 투표로 검거하세요!")
         st.markdown("---")
 
         if st.session_state['mafia_phase'] == 'init':
-            if st.button("🎲 실시간 랜덤 뉴스 사건 시작하기", use_container_width=True):
+            if st.button("⚡ 긴급 뉴스 사건 및 용의자 소집하기", use_container_width=True):
                 if not gemini_key or not client_id:
                     st.error("❌ API Key가 설정되지 않았습니다!")
                 else:
-                    with st.spinner("🎲 실시간 최신 뉴스를 랜덤으로 뽑아 마피아 세션을 구성하는 중..."):
+                    with st.spinner("🚨 긴급 속보 수신 중... 용의자들의 증언 조작을 분석하고 있습니다..."):
                         random_item = fetch_random_naver_news()
                         if random_item:
                             t = random_item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
@@ -378,13 +380,13 @@ else:
                             st.session_state['mafia_phase'] = 'debate'
                             st.rerun()
                         else:
-                            st.warning("뉴스를 불러오지 못했습니다. 다시 시도해 주세요!")
+                            st.warning("뉴스 데이터를 불러오지 못했습니다. 다시 시도해 주세요!")
 
         elif st.session_state['mafia_phase'] == 'debate':
             g = st.session_state['mafia_game_data']
-            st.markdown(f"#### 📌 랜덤 출제 기사: {g['title']}")
+            st.markdown(f"#### 📌 사건 뉴스: {g['title']}")
             st.markdown("---")
-            st.markdown("#### 🗣️ 사건 증인들의 실시간 발언")
+            st.markdown("#### 🗣️ 용의자들의 실시간 법정 증언")
             
             for idx, p in enumerate(g['players']):
                 st.markdown(f"""
@@ -394,12 +396,12 @@ else:
                 """, unsafe_allow_html=True)
 
             st.markdown("---")
-            st.markdown("### 🗳️ [투표 타임] 가짜 기사를 유포한 스파이는 누구인가요?")
+            st.markdown("### 🗳️ [최후 투표] 가짜 증언으로 선동하는 스파이를 지목하세요!")
             
             player_names = [f"{idx+1}번: {p['name']}" for idx, p in enumerate(g['players'])]
-            selected_player = st.radio("처형할 스파이를 지목하세요", options=player_names)
+            selected_player = st.radio("처형할 용의자 선택", options=player_names)
             
-            if st.button("⚖️ 지목한 플레이어 처형 투표 진행", use_container_width=True):
+            if st.button("⚖️ 스파이 처형 투표 확정", use_container_width=True):
                 sel_idx = player_names.index(selected_player)
                 st.session_state['selected_vote'] = sel_idx
                 st.session_state['mafia_phase'] = 'result'
@@ -411,20 +413,20 @@ else:
             voted_player = g['players'][voted_idx]
             spy_player = g['players'][g['spy_index']]
             
-            st.markdown(f"### ⚖️ [최후의 변론 및 처형 결과]")
-            st.markdown(f"💥 **지목된 플레이어 ({voted_player['name']})의 최후 변론**: \"{g['defense']}\"")
+            st.markdown(f"### ⚖️ [심판의 시간 - 최후 변론]")
+            st.markdown(f"💥 **{voted_player['name']}의 최후 변론**: \"{g['defense']}\"")
             st.markdown("---")
             
             if voted_idx == g['spy_index']:
                 st.balloons()
-                st.success(f"🎉 [시민 승리] {voted_player['name']}(은)는 진짜 AI 스파이였습니다! (+20점)")
+                st.success(f"🎉 [시민 진영 승리] {voted_player['name']}(은)는 진짜 AI 스파이였습니다! (+20점)")
                 st.session_state['total_score'] += 20
             else:
-                st.error(f"💀 [스파이 승리] 억울한 시민({voted_player['name']})이 처형되었습니다! 진짜 스파이는 **{spy_player['name']}**이었습니다!")
+                st.error(f"💀 [스파이 진영 승리] 억울한 시민({voted_player['name']})이 처형당했습니다! 진짜 스파이는 **{spy_player['name']}**이었습니다!")
 
-            st.info(f"💡 **팩트체크**: {g['fact_check']}")
+            st.info(f"💡 **진짜 뉴스 팩트체크**: {g['fact_check']}")
             
-            if st.button("🎲 다른 랜덤 뉴스 사건 수사하기", use_container_width=True):
+            if st.button("🔄 다음 긴급 사건 수사하러 가기", use_container_width=True):
                 st.session_state['mafia_phase'] = 'init'
                 st.session_state['mafia_game_data'] = None
                 st.rerun()
@@ -432,18 +434,18 @@ else:
         st.markdown('</div>', unsafe_allow_html=True)
 
     # ---------------------------------------------------------
-    # [게임 2] 뉴스 키워드 쿵쿵따 쇼 (랜덤 첫 제시어 적용)
+    # [게임 2] 뉴스 키워드 쿵쿵따 쇼
     # ---------------------------------------------------------
     elif st.session_state['active_chat_game'] == "kungkungta":
-        st.markdown('<div class="game-box">', unsafe_allow_html=True)
-        st.markdown(f"### 🎤 쿵쿵따 대결 진행 중! (현재 제시어: **{st.session_state['kung_current_word']}**) 구멍 글자: **'{st.session_state['kung_current_word'][-1]}'**")
+        st.markdown('<div class="game-play-box">', unsafe_allow_html=True)
+        st.markdown(f"### 🎤 쿵쿵따 쇼 대결 중! (현재 제시어: **{st.session_state['kung_current_word']}**) 구멍 글자: **'{st.session_state['kung_current_word'][-1]}'**")
         st.markdown("---")
 
         for chat in st.session_state['kung_history']:
             if chat['role'] == 'ai':
-                st.markdown(f"🤖 **AI 쇼호스트**: {chat['text']}")
+                st.markdown(f"🤖 **쇼호스트 AI**: {chat['text']}")
             else:
-                st.markdown(f"👤 **태희 탐정**: {chat['text']}")
+                st.markdown(f"👤 **플레이어**: {chat['text']}")
 
         st.markdown("---")
         with st.form(key="kung_form", clear_on_submit=True):
