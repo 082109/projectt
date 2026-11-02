@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 # 1. 페이지 기본 설정 및 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="FrameLens - AI 미디어 & 예능 퀴즈 스튜디오",
+    page_title="FrameLens Studio",
     page_icon="🎬",
     layout="wide"
 )
@@ -81,7 +81,7 @@ st.markdown("""
         border-radius: 12px;
         font-weight: 700;
         font-size: 0.95rem;
-        height: 48px;
+        height: 44px;
         box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
         transition: all 0.2s ease;
         font-family: 'Noto Serif KR', serif !important;
@@ -91,6 +91,41 @@ st.markdown("""
         background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
         box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
         transform: translateY(-1px);
+    }
+
+    /* 뉴스 카드 디자인 (제목 크고 선명하게 + 본문 줄바꿈) */
+    .news-card-item {
+        background-color: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+        transition: border-color 0.2s ease;
+    }
+    .news-card-item.selected {
+        border: 2px solid #22d3ee;
+        background-color: #0d1e36;
+    }
+    .news-card-date {
+        font-size: 0.8rem;
+        color: #38bdf8;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+    .news-card-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 10px;
+        line-height: 1.4;
+    }
+    .news-card-desc {
+        font-size: 0.92rem;
+        color: #cbd5e1;
+        line-height: 1.6;
+        margin-top: 8px;
+        border-top: 1px solid #1e293b;
+        padding-top: 8px;
     }
 
     .right-card-box {
@@ -138,6 +173,9 @@ if 'step' not in st.session_state:
 
 if 'page_number' not in st.session_state:
     st.session_state['page_number'] = 1
+
+if 'selected_article_idx' not in st.session_state:
+    st.session_state['selected_article_idx'] = 0
 
 def get_korean_font(font_size=18):
     font_path = "NanumGothic.ttf"
@@ -391,6 +429,7 @@ if st.session_state['step'] == 'search':
                 st.session_state['news_pool'] = news_data
                 st.session_state['last_query'] = keyword_input.strip()
                 st.session_state['page_number'] = 1
+                st.session_state['selected_article_idx'] = 0
                 st.session_state['step'] = 'result'
                 st.rerun()
 
@@ -419,29 +458,37 @@ elif st.session_state['step'] == 'result':
         end_idx = start_idx + items_per_page
         current_news_batch = all_news[start_idx:end_idx]
 
-        left_col, right_col = st.columns([1.2, 1])
+        left_col, right_col = st.columns([1.3, 1])
 
         with left_col:
             st.markdown(f"### 최신 뉴스 목록 ({total_news_count}건)")
             st.caption(f"최신순 정렬 (페이지 {current_page} / {total_pages})")
 
-            article_options = {}
             for idx, item in enumerate(current_news_batch):
+                abs_idx = start_idx + idx
                 clean_title = item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
                 clean_desc = item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
                 link = item.get('originallink', item.get('link', '#'))
                 pub_date = parse_pub_date(item.get('pubDate', ''))
-                
-                # [수정됨] 라디오 버튼에 제목뿐만 아니라 짧은 본문(description) 요약까지 함께 노출되도록 구성
-                label = f"[{pub_date}] {clean_title}\n   └ 📝 {clean_desc[:65]}..."
-                article_options[label] = {"title": clean_title, "link": link, "desc": clean_desc, "date": pub_date}
 
-            selected_label = st.radio(
-                "기사 선택",
-                options=list(article_options.keys()),
-                key=f"radio_page_{current_page}",
-                label_visibility="collapsed"
-            )
+                is_selected = (st.session_state['selected_article_idx'] == abs_idx)
+                selected_class = "selected" if is_selected else ""
+
+                card_col1, card_col2 = st.columns([4.5, 1])
+                with card_col1:
+                    st.markdown(f"""
+                    <div class="news-card-item {selected_class}">
+                        <div class="news-card-date">📅 {pub_date}</div>
+                        <div class="news-card-title">{clean_title}</div>
+                        <div class="news-card-desc">📝 {clean_desc}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with card_col2:
+                    st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
+                    btn_label = "✅ 선택됨" if is_selected else "👉 선택"
+                    if st.button(btn_label, key=f"select_btn_{abs_idx}", use_container_width=True):
+                        st.session_state['selected_article_idx'] = abs_idx
+                        st.rerun()
 
             p_col1, p_col2, p_col3 = st.columns([1, 2, 1])
             with p_col1:
@@ -470,8 +517,16 @@ elif st.session_state['step'] == 'result':
                 label_visibility="collapsed"
             )
 
-            if selected_label in article_options:
-                selected_art = article_options[selected_label]
+            sel_idx = st.session_state['selected_article_idx']
+            if 0 <= sel_idx < len(all_news):
+                target_item = all_news[sel_idx]
+                selected_art = {
+                    "title": target_item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&"),
+                    "desc": target_item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&"),
+                    "link": target_item.get('originallink', target_item.get('link', '#')),
+                    "date": parse_pub_date(target_item.get('pubDate', ''))
+                }
+
                 st.markdown('<div class="right-card-box">', unsafe_allow_html=True)
                 st.markdown(f"**선택된 뉴스 기사**")
                 st.write(f"📌 {selected_art['title']}")
@@ -479,7 +534,6 @@ elif st.session_state['step'] == 'result':
                 st.markdown(f"[원문 기사 읽기]({selected_art['link']})")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-                # 기사 선택 시 AI 3줄 요약 카드 렌더링
                 if gemini_key:
                     with st.spinner("📝 AI가 뉴스를 3줄로 핵심 요약하는 중..."):
                         summary_lines = generate_3line_summary(selected_art['title'], selected_art['desc'], gemini_key)
@@ -489,7 +543,7 @@ elif st.session_state['step'] == 'result':
                             st.markdown(f"• {s_line}")
                         st.markdown('</div>', unsafe_allow_html=True)
 
-            current_article_key = f"{selected_label}_{content_format}"
+            current_article_key = f"{sel_idx}_{content_format}"
             if 'last_art_key' not in st.session_state or st.session_state['last_art_key'] != current_article_key:
                 st.session_state.pop('image_bytes', None)
                 st.session_state['last_art_key'] = current_article_key
@@ -499,17 +553,13 @@ elif st.session_state['step'] == 'result':
             if submit_plan:
                 if not gemini_key:
                     st.error("❌ 사이드바에 API Key를 입력해 주세요!")
-                elif selected_label not in article_options:
-                    st.warning("⚠️ 선택된 뉴스 기사 정보를 찾을 수 없습니다.")
                 else:
-                    selected_article = article_options[selected_label]
-                    
                     with st.spinner("🔄 4컷 만화 일러스트 및 디자인을 렌더링 중입니다... (예상 소요 시간: 약 10~15초)"):
-                        comic_data = generate_comic_scenario(selected_article['title'], selected_article['desc'], "", gemini_key)
+                        comic_data = generate_comic_scenario(selected_art['title'], selected_art['desc'], "", gemini_key)
                         st.session_state['comic_data'] = comic_data
-                        image_bytes = create_4cut_comic_image(comic_data, selected_article['title'])
+                        image_bytes = create_4cut_comic_image(comic_data, selected_art['title'])
                         
-                        st.session_state['selected_article'] = selected_article
+                        st.session_state['selected_article'] = selected_art
                         st.session_state['content_format'] = content_format
                         st.session_state['image_bytes'] = image_bytes
 
