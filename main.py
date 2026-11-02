@@ -11,7 +11,7 @@ import random
 from PIL import Image, ImageDraw, ImageFont
 
 # ---------------------------------------------------------
-# 1. 페이지 기본 설정 및 스타일링
+# 1. 페이지 기본 설정 및 스타일링 (큼직하게 튜닝)
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens Studio",
@@ -36,70 +36,74 @@ st.markdown("""
     
     .hero-title {
         font-family: 'Noto Serif KR', serif !important;
-        font-size: 3.2rem;
+        font-size: 3.8rem;
         font-weight: 900;
         color: #ffffff;
         text-align: center;
-        margin-top: 20px;
-        margin-bottom: 8px;
+        margin-top: 30px;
+        margin-bottom: 12px;
         letter-spacing: -1.5px;
     }
     .hero-subtitle {
         font-family: 'Noto Serif KR', serif !important;
         color: #94a3b8;
-        font-size: 1.1rem;
+        font-size: 1.25rem;
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 40px;
         font-weight: 300;
     }
 
+    /* 큼직하고 시원한 검색창 컨테이너 */
     .search-container {
         background: #0d1527;
-        border: 2px solid #22d3ee;
-        border-radius: 24px;
-        padding: 12px 20px;
-        box-shadow: 0 0 35px rgba(34, 211, 238, 0.25);
-        margin: 0 auto 30px auto;
-        max-width: 800px;
+        border: 2.5px solid #22d3ee;
+        border-radius: 28px;
+        padding: 20px 25px;
+        box-shadow: 0 0 45px rgba(34, 211, 238, 0.3);
+        margin: 0 auto 40px auto;
+        max-width: 900px;
     }
 
+    /* 입력창 내부 글씨와 높이 큼직하게 확장 */
     div[data-baseweb="input"] {
         background-color: transparent !important;
         border: none !important;
         color: #ffffff !important;
-        font-size: 1.15rem !important;
+        font-size: 1.25rem !important;
         font-family: 'Noto Serif KR', serif !important;
     }
     div[data-baseweb="input"] input {
         color: #ffffff !important;
+        padding: 8px 4px !important;
     }
 
+    /* 검색 버튼 큼직하게 확장 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: #ffffff;
         border: none;
-        border-radius: 12px;
+        border-radius: 14px;
         font-weight: 700;
-        font-size: 0.95rem;
-        height: 44px;
-        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+        font-size: 1.1rem;
+        height: 55px;
+        box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4);
         transition: all 0.2s ease;
         font-family: 'Noto Serif KR', serif !important;
         width: 100%;
     }
     .stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
         background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-        box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
+        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
         transform: translateY(-1px);
     }
 
-    /* 뉴스 카드 디자인 (제목 크고 선명하게 + 본문 줄바꿈) */
+    /* 뉴스 카드 디자인 */
     .news-card-item {
         background-color: #0f172a;
         border: 1px solid #1e293b;
-        border-radius: 12px;
-        padding: 16px 20px;
-        margin-bottom: 12px;
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 15px;
         transition: border-color 0.2s ease;
     }
     .news-card-item.selected {
@@ -107,32 +111,32 @@ st.markdown("""
         background-color: #0d1e36;
     }
     .news-card-date {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         color: #38bdf8;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         font-weight: 600;
     }
     .news-card-title {
-        font-size: 1.15rem;
+        font-size: 1.25rem;
         font-weight: 800;
         color: #ffffff;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         line-height: 1.4;
     }
     .news-card-desc {
-        font-size: 0.92rem;
+        font-size: 0.98rem;
         color: #cbd5e1;
         line-height: 1.6;
-        margin-top: 8px;
+        margin-top: 10px;
         border-top: 1px solid #1e293b;
-        padding-top: 8px;
+        padding-top: 10px;
     }
 
     .right-card-box {
         background-color: #0d1527;
         border: 1px solid #1e293b;
-        border-radius: 16px;
-        padding: 20px;
+        border-radius: 18px;
+        padding: 24px;
         margin-top: 15px;
         margin-bottom: 20px;
     }
@@ -140,18 +144,18 @@ st.markdown("""
     .summary-card-box {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         border: 1.5px solid #38bdf8;
-        border-radius: 14px;
-        padding: 16px 20px;
-        margin-top: 12px;
+        border-radius: 16px;
+        padding: 20px;
+        margin-top: 15px;
     }
 
     .image-preview-container {
         background: #0d1527;
         border: 2px solid #22d3ee;
-        border-radius: 20px;
-        padding: 30px;
-        margin-top: 25px;
-        box-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
+        border-radius: 22px;
+        padding: 35px;
+        margin-top: 30px;
+        box-shadow: 0 0 35px rgba(34, 211, 238, 0.3);
     }
 
     h1, h2, h3, h4, label {
@@ -160,7 +164,7 @@ st.markdown("""
 
     hr {
         border-color: #1e293b !important;
-        margin: 20px 0 !important;
+        margin: 25px 0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -193,7 +197,6 @@ def get_korean_font(font_size=18):
         pass
     return ImageFont.load_default()
 
-# 시크릿 키에서 API 키 자동 로드 (사이드바 문구 제거 완료)
 client_id = st.secrets.get("NAVER_CLIENT_ID", "").strip()
 client_secret = st.secrets.get("NAVER_CLIENT_SECRET", "").strip()
 gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip()
@@ -399,13 +402,13 @@ def create_4cut_comic_image(comic_data, article_title):
 # 메인 UI 실행
 # ---------------------------------------------------------
 if st.session_state['step'] == 'search':
-    st.markdown('<div style="height: 40px;"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="height: 50px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens Studio</div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-subtitle">뉴스 기사를 선택하고 고품질 맞춤형 미디어 콘텐츠를 생성해 보세요!</div>', unsafe_allow_html=True)
 
     with st.form(key="search_form"):
         st.markdown('<div class="search-container">', unsafe_allow_html=True)
-        s_col1, s_col2 = st.columns([5, 1])
+        s_col1, s_col2 = st.columns([5, 1.1])
         with s_col1:
             keyword_input = st.text_input(
                 "뉴스 검색어 입력",
@@ -481,7 +484,7 @@ elif st.session_state['step'] == 'result':
                     </div>
                     """, unsafe_allow_html=True)
                 with card_col2:
-                    st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
+                    st.markdown("<div style='height: 25px;'></div>", unsafe_allow_html=True)
                     btn_label = "✅ 선택됨" if is_selected else "👉 선택"
                     if st.button(btn_label, key=f"select_btn_{abs_idx}", use_container_width=True):
                         st.session_state['selected_article_idx'] = abs_idx
