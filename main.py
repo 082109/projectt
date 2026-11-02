@@ -207,9 +207,6 @@ def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=4):
         curr_y += font.size + line_spacing
     return curr_y
 
-# ---------------------------------------------------------
-# [새 기능] 기사 핵심 3줄 요약 브리핑 생성 함수
-# ---------------------------------------------------------
 def generate_3line_summary(title, desc, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     prompt = f"""
@@ -244,9 +241,6 @@ def generate_3line_summary(title, desc, api_key):
         "📌 향후 사회적·경제적 파급 효과 지속 관찰 필요"
     ]
 
-# ---------------------------------------------------------
-# 미디어 패널 및 제작 렌더링 엔진
-# ---------------------------------------------------------
 def fetch_robust_panel_image(prompt_text, index):
     clean_prompt = prompt_text.replace("\n", " ").strip()
     encoded_prompt = urllib.parse.quote(f"2D vibrant anime webtoon style, {clean_prompt}")
@@ -438,7 +432,8 @@ elif st.session_state['step'] == 'result':
                 link = item.get('originallink', item.get('link', '#'))
                 pub_date = parse_pub_date(item.get('pubDate', ''))
                 
-                label = f"[{pub_date}] {clean_title}"
+                # [수정됨] 라디오 버튼에 제목뿐만 아니라 짧은 본문(description) 요약까지 함께 노출되도록 구성
+                label = f"[{pub_date}] {clean_title}\n   └ 📝 {clean_desc[:65]}..."
                 article_options[label] = {"title": clean_title, "link": link, "desc": clean_desc, "date": pub_date}
 
             selected_label = st.radio(
@@ -484,7 +479,7 @@ elif st.session_state['step'] == 'result':
                 st.markdown(f"[원문 기사 읽기]({selected_art['link']})")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-                # [새 기능] 기사 선택 시 AI 3줄 요약 카드 렌더링
+                # 기사 선택 시 AI 3줄 요약 카드 렌더링
                 if gemini_key:
                     with st.spinner("📝 AI가 뉴스를 3줄로 핵심 요약하는 중..."):
                         summary_lines = generate_3line_summary(selected_art['title'], selected_art['desc'], gemini_key)
