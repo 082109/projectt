@@ -11,7 +11,7 @@ import random
 from PIL import Image, ImageDraw, ImageFont
 
 # ---------------------------------------------------------
-# 1. 페이지 기본 설정 및 스타일링 (사이드바 글씨 가독성 대폭 개선)
+# 1. 페이지 기본 설정 및 트렌디 현대적 스타일링 (이미지 컨셉 반영)
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens Studio",
@@ -21,167 +21,180 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800&display=swap');
 
+    /* 화사하고 현대적인 블루 그라데이션 배경 */
     .stApp {
-        background-color: #080c14;
-        color: #f3f4f6;
-        font-family: 'Noto Serif KR', serif !important;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e40af 100%);
+        color: #ffffff;
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
     }
     
-    /* 사이드바 배경 및 내비게이션 글씨 가독성 강화 */
+    /* 사이드바 스타일링 */
     section[data-testid="stSidebar"] {
-        background-color: #0f172a;
-        border-right: 1px solid #1e293b;
-        font-family: 'Noto Serif KR', serif !important;
+        background-color: #0f172a !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+        font-family: 'Pretendard', sans-serif !important;
     }
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] div, 
     section[data-testid="stSidebar"] a {
         color: #ffffff !important;
-        font-size: 1.05rem !important;
+        font-size: 1rem !important;
         font-weight: 600 !important;
     }
-    /* 사이드바 페이지 링크 텍스트 선명하게 설정 */
     [data-testid="stSidebarNav"] a {
-        color: #f8fafc !important;
-        background-color: rgba(30, 41, 59, 0.6) !important;
-        border-radius: 10px !important;
-        margin-bottom: 6px !important;
-        padding: 10px 14px !important;
+        color: #ffffff !important;
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
+        margin-bottom: 8px !important;
+        padding: 12px 16px !important;
     }
     [data-testid="stSidebarNav"] a[aria-current="page"] {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
-        border: 1px solid #38bdf8 !important;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
     }
     
     .hero-title {
-        font-family: 'Noto Serif KR', serif !important;
-        font-size: 3.8rem;
-        font-weight: 900;
+        font-family: 'Pretendard', sans-serif !important;
+        font-size: 3.5rem;
+        font-weight: 800;
         color: #ffffff;
         text-align: center;
-        margin-top: 30px;
-        margin-bottom: 12px;
-        letter-spacing: -1.5px;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        letter-spacing: -1px;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     }
     .hero-subtitle {
-        font-family: 'Noto Serif KR', serif !important;
-        color: #94a3b8;
+        font-family: 'Pretendard', sans-serif !important;
+        color: #e0f2fe;
         font-size: 1.25rem;
         text-align: center;
         margin-bottom: 40px;
-        font-weight: 300;
+        font-weight: 400;
     }
 
-    .search-container {
-        background: #0d1527;
-        border: 2.5px solid #22d3ee;
-        border-radius: 28px;
-        padding: 20px 25px;
-        box-shadow: 0 0 45px rgba(34, 211, 238, 0.3);
+    /* 이미지 스타일의 알약 형태(Pill) 입체 검색 캡슐 */
+    .search-pill-container {
+        background: #ffffff;
+        border-radius: 50px;
+        padding: 6px 8px 6px 24px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
         margin: 0 auto 40px auto;
-        max-width: 900px;
+        display: flex;
+        align-items: center;
     }
 
+    /* Streamlit 입력 폼 내부 텍스트 스타일 지정 */
     div[data-baseweb="input"] {
         background-color: transparent !important;
         border: none !important;
-        color: #ffffff !important;
-        font-size: 1.25rem !important;
-        font-family: 'Noto Serif KR', serif !important;
+        font-size: 1.2rem !important;
+        font-family: 'Pretendard', sans-serif !important;
     }
     div[data-baseweb="input"] input {
-        color: #ffffff !important;
-        padding: 8px 4px !important;
+        color: #1e293b !important;
+        font-weight: 500 !important;
+    }
+    div[data-baseweb="input"] input::placeholder {
+        color: #94a3b8 !important;
     }
 
+    /* 돋보기 검색버튼 (둥근 알약형 파란색) */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
         color: #ffffff;
         border: none;
-        border-radius: 14px;
+        border-radius: 40px;
         font-weight: 700;
         font-size: 1.1rem;
-        height: 55px;
-        box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4);
-        transition: all 0.2s ease;
-        font-family: 'Noto Serif KR', serif !important;
+        height: 52px;
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+        transition: all 0.25s ease;
+        font-family: 'Pretendard', sans-serif !important;
         width: 100%;
     }
     .stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
         background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
-        transform: translateY(-1px);
+        box-shadow: 0 8px 25px rgba(56, 189, 248, 0.5);
+        transform: translateY(-2px);
     }
 
+    /* 세련된 현대식 Glassmorphism 카드 디자인 */
     .news-card-item {
-        background-color: #0f172a;
-        border: 1px solid #1e293b;
-        border-radius: 14px;
-        padding: 20px;
-        margin-bottom: 15px;
-        transition: border-color 0.2s ease;
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 22px;
+        margin-bottom: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
     }
     .news-card-item.selected {
-        border: 2px solid #22d3ee;
-        background-color: #0d1e36;
+        border: 2.5px solid #38bdf8;
+        background: rgba(255, 255, 255, 0.22);
+        box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
     }
     .news-card-date {
-        font-size: 0.85rem;
-        color: #38bdf8;
+        font-size: 0.88rem;
+        color: #7dd3fc;
         margin-bottom: 8px;
         font-weight: 600;
     }
     .news-card-title {
         font-size: 1.25rem;
-        font-weight: 800;
+        font-weight: 700;
         color: #ffffff;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         line-height: 1.4;
     }
     .news-card-desc {
         font-size: 0.98rem;
-        color: #cbd5e1;
+        color: #e2e8f0;
         line-height: 1.6;
         margin-top: 10px;
-        border-top: 1px solid #1e293b;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
         padding-top: 10px;
     }
 
     .right-card-box {
-        background-color: #0d1527;
-        border: 1px solid #1e293b;
-        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
         padding: 24px;
         margin-top: 15px;
         margin-bottom: 20px;
     }
 
     .summary-card-box {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        background: rgba(15, 23, 42, 0.5);
         border: 1.5px solid #38bdf8;
-        border-radius: 16px;
-        padding: 20px;
+        border-radius: 18px;
+        padding: 22px;
         margin-top: 15px;
     }
 
     .image-preview-container {
-        background: #0d1527;
-        border: 2px solid #22d3ee;
-        border-radius: 22px;
+        background: rgba(15, 23, 42, 0.7);
+        border: 2px solid #38bdf8;
+        border-radius: 24px;
         padding: 35px;
         margin-top: 30px;
-        box-shadow: 0 0 35px rgba(34, 211, 238, 0.3);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
     }
 
     h1, h2, h3, h4, label {
-        font-family: 'Noto Serif KR', serif !important;
+        font-family: 'Pretendard', sans-serif !important;
     }
 
     hr {
-        border-color: #1e293b !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
         margin: 25px 0 !important;
     }
 </style>
@@ -417,16 +430,17 @@ def create_4cut_comic_image(comic_data, article_title):
     return buf
 
 # ---------------------------------------------------------
-# 메인 UI 실행
+# 3. 메인 UI 실행
 # ---------------------------------------------------------
 if st.session_state['step'] == 'search':
-    st.markdown('<div style="height: 50px;"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="height: 40px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens Studio</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-subtitle">뉴스 기사를 선택하고 고품질 맞춤형 미디어 콘텐츠를 생성해 보세요!</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">원하는 뉴스 키워드를 검색하고 고품질 맞춤형 미디어 콘텐츠를 생성해 보세요!</div>', unsafe_allow_html=True)
 
+    # 이미지 스타일 반영: 둥근 알약 형태의 통합 검색창
     with st.form(key="search_form"):
-        st.markdown('<div class="search-container">', unsafe_allow_html=True)
-        s_col1, s_col2 = st.columns([5, 1.1])
+        st.markdown('<div class="search-pill-container">', unsafe_allow_html=True)
+        s_col1, s_col2 = st.columns([5, 1.2])
         with s_col1:
             keyword_input = st.text_input(
                 "뉴스 검색어 입력",
@@ -435,7 +449,7 @@ if st.session_state['step'] == 'search':
                 label_visibility="collapsed"
             )
         with s_col2:
-            search_trigger = st.form_submit_button("검색", use_container_width=True)
+            search_trigger = st.form_submit_button("🔍 검색", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     if search_trigger:
@@ -515,7 +529,7 @@ elif st.session_state['step'] == 'result':
                         st.session_state['page_number'] -= 1
                         st.rerun()
             with p_col2:
-                st.markdown(f"<div style='text-align: center; padding-top: 10px; color: #94a3b8;'>{current_page} / {total_pages} Page</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: center; padding-top: 10px; color: #e2e8f0;'>{current_page} / {total_pages} Page</div>", unsafe_allow_html=True)
             with p_col3:
                 if current_page < total_pages:
                     if st.button("다음 페이지 ▶", use_container_width=True):
