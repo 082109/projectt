@@ -5,7 +5,7 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 메신저 철제 프레임 스타일링
+# 1. 페이지 설정 및 할로윈 스릴러 조명 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - AI 뉴스 예능 스튜디오",
@@ -17,8 +17,9 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
 
+    /* 배경: 어두운 분위기 + 조명(손전등/스폿라이트) 글로우 효과 */
     .stApp {
-        background: linear-gradient(rgba(3, 5, 8, 0.8), rgba(9, 13, 22, 0.9)), 
+        background: radial-gradient(circle at 50% 30%, rgba(185, 28, 28, 0.15) 0%, rgba(15, 23, 42, 0.85) 50%, rgba(3, 5, 8, 0.98) 100%), 
                     url('https://image.pollinations.ai/prompt/dark%20creepy%20school%20hallway%20locker%20corridor%20flashlight%20horror%20game%20background?width=1920&height=1080&nologo=true');
         background-size: cover;
         background-position: center;
@@ -28,8 +29,8 @@ st.markdown("""
     }
     
     section[data-testid="stSidebar"] {
-        background-color: rgba(7, 10, 18, 0.9) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background-color: rgba(7, 10, 18, 0.95) !important;
+        border-right: 1px solid rgba(185, 28, 28, 0.3) !important;
     }
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] div, 
@@ -40,17 +41,18 @@ st.markdown("""
     }
     [data-testid="stSidebarNav"] a {
         color: #ffffff !important;
-        background-color: rgba(30, 41, 59, 0.8) !important;
+        background-color: rgba(15, 23, 42, 0.8) !important;
         border-radius: 10px !important;
         margin-bottom: 6px !important;
         padding: 10px 14px !important;
     }
     [data-testid="stSidebarNav"] a[aria-current="page"] {
-        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
+        background: linear-gradient(135deg, #991b1b 0%, #450a0a 100%) !important;
         color: #ffffff !important;
-        border: 1px solid #a78bfa !important;
+        border: 1px solid #dc2626 !important;
     }
 
+    /* 할로윈 수사 타이틀 */
     .arcade-title {
         font-family: 'Black Han Sans', sans-serif !important;
         font-size: 3.8rem;
@@ -59,31 +61,34 @@ st.markdown("""
         text-align: center;
         margin-top: 20px;
         margin-bottom: 10px;
-        text-shadow: 0 0 20px rgba(124, 58, 237, 0.8);
+        text-shadow: 0 0 20px rgba(220, 38, 38, 0.9), 0 0 40px rgba(153, 27, 27, 0.7);
         letter-spacing: 2px;
     }
     .arcade-subtitle {
-        color: #cbd5e1;
+        color: #fca5a5;
         font-size: 1.25rem;
         text-align: center;
         margin-bottom: 40px;
         font-weight: 600;
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
     }
 
+    /* 💡 다크 매트 텍스처 카드 (보라색 제거, 검정/레드 포인트) */
     .game-lobby-card {
-        background: rgba(11, 17, 32, 0.65);
-        backdrop-filter: blur(12px);
-        border: 2px solid rgba(255, 255, 255, 0.15);
-        border-radius: 28px;
+        background: rgba(10, 10, 12, 0.85);
+        backdrop-filter: blur(14px);
+        border: 2px solid rgba(220, 38, 38, 0.3);
+        border-radius: 20px;
         padding: 45px 30px;
         text-align: center;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9), inset 0 0 25px rgba(220, 38, 38, 0.05);
         transition: all 0.3s ease;
         height: 100%;
     }
     .game-lobby-card:hover {
-        border-color: #a78bfa;
-        background: rgba(17, 24, 39, 0.75);
+        border-color: #ef4444;
+        background: rgba(20, 10, 12, 0.92);
+        box-shadow: 0 0 30px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.15);
         transform: translateY(-6px);
     }
     .card-icon-box { font-size: 4.5rem; margin-bottom: 20px; }
@@ -95,11 +100,11 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* 💡 [핵심] 사진 속 메신저 최상단 철제 프레임 바 디자인 */
+    /* 메신저 철제 상단 바 (레드 스팟 폰트) */
     .messenger-top-bar {
-        background: #1e2530;
-        border: 2px solid #374151;
-        border-bottom: 2px solid #111827;
+        background: #0f0f13;
+        border: 2px solid #3f3f46;
+        border-bottom: 2px solid #000000;
         border-radius: 14px 14px 0 0;
         padding: 10px 20px;
         display: flex;
@@ -107,34 +112,34 @@ st.markdown("""
         align-items: center;
         max-width: 850px;
         margin: 0 auto;
-        box-shadow: inset 0 2px 5px rgba(255,255,255,0.05);
     }
     .messenger-top-title {
         font-family: 'Black Han Sans', sans-serif !important;
-        color: #e5e7eb;
+        color: #f3f4f6;
         font-size: 1.1rem;
         letter-spacing: 1px;
     }
     .messenger-top-counter {
-        background: #111827;
-        color: #38bdf8;
+        background: #000000;
+        color: #ef4444;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 0.95rem;
         font-weight: bold;
-        border: 1px solid #374151;
+        border: 1px solid #71717a;
     }
 
-    /* 💡 사진 속 어두운 메신저 채팅방 본체 */
+    /* 💡 메신저 채팅방 */
     .messenger-room {
-        background: #090e17;
-        border: 2px solid #374151;
+        background: rgba(5, 5, 8, 0.92);
+        backdrop-filter: blur(12px);
+        border: 2px solid #3f3f46;
         border-top: none;
         border-radius: 0 0 14px 14px;
         padding: 25px;
         max-width: 850px;
         margin: 0 auto 20px auto;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.9);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.95);
         height: 450px;
         overflow-y: auto;
     }
@@ -142,48 +147,48 @@ st.markdown("""
     .msg-row-left { display: flex; justify-content: flex-start; margin-bottom: 16px; }
     .msg-row-right { display: flex; justify-content: flex-end; margin-bottom: 16px; }
     
-    /* 사진 속 하얗고 둥근 메신저 말풍선 스타일 */
     .msg-bubble-left {
-        background-color: #ffffff;
+        background-color: #f3f4f6;
         color: #111827;
         padding: 12px 18px;
         border-radius: 18px 18px 18px 4px;
         max-width: 75%;
         font-size: 1.05rem;
         font-weight: 500;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
     .msg-bubble-right {
-        background-color: #ffffff;
+        background-color: #f3f4f6;
         color: #111827;
         padding: 12px 18px;
         border-radius: 18px 18px 4px 18px;
         max-width: 75%;
         font-size: 1.05rem;
         font-weight: 500;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
-    .msg-sender { font-size: 0.8rem; color: #9ca3af; margin-bottom: 4px; font-weight: 700; }
+    .msg-sender { font-size: 0.8rem; color: #a1a1aa; margin-bottom: 4px; font-weight: 700; }
 
-    /* 네온 버튼 */
+    /* 💡 보라색을 완전 지우고 무서운 피빛 스릴러 다크 레드로 변경된 버튼 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
-        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+        background: linear-gradient(135deg, #18181b 0%, #09090b 100%);
         color: #ffffff;
-        border: 2px solid #a78bfa;
-        border-radius: 16px;
+        border: 2px solid #dc2626;
+        border-radius: 12px;
         font-weight: 800;
         font-size: 1.15rem;
         height: 55px;
-        box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
-        transition: all 0.2s ease;
+        box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+        transition: all 0.25s ease;
         font-family: 'Black Han Sans', sans-serif !important;
         letter-spacing: 1px;
         width: 100%;
     }
     .stButton > button:hover {
-        box-shadow: 0 0 25px rgba(167, 139, 250, 0.8);
+        background: linear-gradient(135deg, #991b1b 0%, #450a0a 100%);
+        box-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
+        border-color: #f87171;
         transform: translateY(-2px);
-        border-color: #ffffff;
     }
 
     h1, h2, h3, h4, label { font-family: 'Noto Serif KR', serif !important; }
@@ -329,7 +334,7 @@ def get_kung_reply(user_word, last_word, api_key):
 # ---------------------------------------------------------
 st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
 st.markdown('<div class="arcade-title">🕹️ AI 예능 스튜디오 아케이드</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="arcade-subtitle">실시간 서바이벌 추리 & 퀴즈 쇼 | 누적 점수: <span style="color: #38bdf8;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="arcade-subtitle">실시간 서바이벌 추리 & 퀴즈 쇼 | 누적 점수: <span style="color: #ef4444;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
 
 # 로비 화면
 if st.session_state['active_chat_game'] is None:
@@ -384,7 +389,7 @@ else:
             st.markdown('<div class="game-lobby-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
             st.markdown("### 🕵️‍♂️ [스파이 잡기] 뉴스 추리 게임 가이드")
             st.markdown("""
-            <div style="color: #cbd5e1; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1rem;">
+            <div style="color: #d4d4d8; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1rem;">
                 📌 <b>게임 룰 설명</b><br>
                 1. 버튼을 누르면 실시간 랜덤 뉴스 기사와 4명의 AI 용의자가 소집됩니다.<br>
                 2. AI 용의자들은 메신저 창에 각자의 증언(팩트 또는 왜곡된 가짜 뉴스)을 남깁니다.<br>
@@ -425,7 +430,6 @@ else:
                 st.markdown(f"<p style='color: #e2e8f0; font-size: 1.05rem; line-height: 1.6;'>{g['desc']}</p>", unsafe_allow_html=True)
                 st.markdown(f"[🔗 네이버 뉴스 원문 기사 읽기]({g['link']})")
 
-            # 💡 [요청 반영] 사진과 똑같은 철제 메신저 상단 바 추가
             st.markdown("""
             <div class="messenger-top-bar">
                 <div class="messenger-top-title">💬 메신저 단톡방</div>
@@ -433,7 +437,6 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-            # 사진과 똑같은 메신저 채팅방 본체
             st.markdown('<div class="messenger-room">', unsafe_allow_html=True)
             for chat in st.session_state['messenger_chats']:
                 if chat['sender'] == "태희 (나)":
@@ -447,7 +450,7 @@ else:
                     """, unsafe_allow_html=True)
                 elif chat['sender'] == "시스템":
                     st.markdown(f"""
-                    <div style="text-align:center; color:#38bdf8; font-size:0.9rem; margin:10px 0; font-weight:bold;">
+                    <div style="text-align:center; color:#ef4444; font-size:0.9rem; margin:10px 0; font-weight:bold;">
                         {chat['text']}
                     </div>
                     """, unsafe_allow_html=True)
