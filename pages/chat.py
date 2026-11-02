@@ -4,7 +4,7 @@ import urllib.parse
 import json
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 다크 네이비 프리미엄 스타일링
+# 1. 페이지 설정 및 다크 네이비 프리미엄 스타일링 (사이드바 글씨 개선)
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - 뉴스 키워드 쿵쿵따 쇼",
@@ -21,12 +21,33 @@ st.markdown("""
         color: #f3f4f6;
         font-family: 'Noto Serif KR', serif !important;
     }
+    
+    /* 사이드바 글씨 선명하게 설정 */
     section[data-testid="stSidebar"] {
         background-color: #0f172a;
         border-right: 1px solid #1e293b;
         font-family: 'Noto Serif KR', serif !important;
     }
-    
+    section[data-testid="stSidebar"] span, 
+    section[data-testid="stSidebar"] div, 
+    section[data-testid="stSidebar"] a {
+        color: #ffffff !important;
+        font-size: 1.05rem !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stSidebarNav"] a {
+        color: #f8fafc !important;
+        background-color: rgba(30, 41, 59, 0.6) !important;
+        border-radius: 10px !important;
+        margin-bottom: 6px !important;
+        padding: 10px 14px !important;
+    }
+    [data-testid="stSidebarNav"] a[aria-current="page"] {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #38bdf8 !important;
+    }
+
     .hero-title {
         font-family: 'Noto Serif KR', serif !important;
         font-size: 3.2rem;
@@ -95,7 +116,6 @@ if 'kung_history' not in st.session_state:
 if 'kung_current_word' not in st.session_state:
     st.session_state['kung_current_word'] = "인공지능"
 
-# 시크릿 키 로드
 gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip()
 
 def get_kung_reply(user_word, last_word, api_key):
