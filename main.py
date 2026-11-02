@@ -193,13 +193,10 @@ def get_korean_font(font_size=18):
         pass
     return ImageFont.load_default()
 
-st.sidebar.header("🔑 API 설정")
-client_id = st.secrets.get("NAVER_CLIENT_ID", "").strip() or st.sidebar.text_input("Naver Client ID", type="password").strip()
-client_secret = st.secrets.get("NAVER_CLIENT_SECRET", "").strip() or st.sidebar.text_input("Naver Client Secret", type="password").strip()
-gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip() or st.sidebar.text_input("Gemini API Key", type="password").strip()
-
-if not (client_id and client_secret and gemini_key):
-    st.sidebar.info("💡 사이드바에 API 키를 입력해 주세요.")
+# 시크릿 키에서 API 키 자동 로드 (사이드바 문구 제거 완료)
+client_id = st.secrets.get("NAVER_CLIENT_ID", "").strip()
+client_secret = st.secrets.get("NAVER_CLIENT_SECRET", "").strip()
+gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip()
 
 def parse_pub_date(pub_date_str):
     if not pub_date_str:
@@ -423,7 +420,7 @@ if st.session_state['step'] == 'search':
     if search_trigger:
         if not keyword_input.strip():
             st.warning("⚠️ 검색어를 입력해주세요!")
-        elif client_id and client_secret:
+        else:
             with st.spinner("뉴스를 불러오는 중입니다..."):
                 news_data = fetch_naver_news(keyword_input)
                 st.session_state['news_pool'] = news_data
@@ -552,7 +549,7 @@ elif st.session_state['step'] == 'result':
 
             if submit_plan:
                 if not gemini_key:
-                    st.error("❌ 사이드바에 API Key를 입력해 주세요!")
+                    st.error("❌ API Key가 설정되지 않았습니다!")
                 else:
                     with st.spinner("🔄 4컷 만화 일러스트 및 디자인을 렌더링 중입니다... (예상 소요 시간: 약 10~15초)"):
                         comic_data = generate_comic_scenario(selected_art['title'], selected_art['desc'], "", gemini_key)
