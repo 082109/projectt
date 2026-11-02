@@ -5,11 +5,11 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 메신저 스타일링
+# 1. 페이지 설정 및 네온 아케이드 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - AI 뉴스 예능 스튜디오",
-    page_icon="💬",
+    page_icon="🎮",
     layout="wide"
 )
 
@@ -66,11 +66,12 @@ st.markdown("""
         font-weight: 600;
     }
 
+    /* 로비 대형 카드 (설명 없이 깔끔하게 타이틀만) */
     .game-lobby-card {
         background: linear-gradient(145deg, #111827 0%, #0b1120 100%);
         border: 3px solid #374151;
         border-radius: 28px;
-        padding: 45px 30px;
+        padding: 60px 30px;
         text-align: center;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
         transition: all 0.3s ease;
@@ -81,16 +82,15 @@ st.markdown("""
         box-shadow: 0 0 40px rgba(124, 58, 237, 0.5);
         transform: translateY(-8px);
     }
-    .card-icon-box { font-size: 4.5rem; margin-bottom: 20px; }
+    .card-icon-box { font-size: 5rem; margin-bottom: 25px; }
     .card-title {
         font-family: 'Black Han Sans', sans-serif !important;
-        font-size: 2rem;
+        font-size: 2.2rem;
         color: #ffffff;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
     }
-    .card-desc { color: #9ca3af; font-size: 1.05rem; line-height: 1.7; margin-bottom: 30px; }
 
-    /* 메신저 채팅방 컨테이너 */
+    /* 채팅방 컨테이너 */
     .messenger-room {
         background: #090e17;
         border: 2.5px solid #374151;
@@ -103,17 +103,8 @@ st.markdown("""
         overflow-y: auto;
     }
 
-    /* 메신저 말풍선 (왼쪽: AI / 오른쪽: 유저) */
-    .msg-row-left {
-        display: flex;
-        justify-content: flex-start;
-        margin-bottom: 14px;
-    }
-    .msg-row-right {
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 14px;
-    }
+    .msg-row-left { display: flex; justify-content: flex-start; margin-bottom: 14px; }
+    .msg-row-right { display: flex; justify-content: flex-end; margin-bottom: 14px; }
     .msg-bubble-left {
         background-color: #1f2937;
         color: #f3f4f6;
@@ -134,12 +125,7 @@ st.markdown("""
         font-size: 1.05rem;
         box-shadow: 0 4px 10px rgba(124,58,237,0.4);
     }
-    .msg-sender {
-        font-size: 0.8rem;
-        color: #9ca3af;
-        margin-bottom: 3px;
-        font-weight: 700;
-    }
+    .msg-sender { font-size: 0.8rem; color: #9ca3af; margin-bottom: 3px; font-weight: 700; }
 
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
         background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
@@ -298,12 +284,15 @@ def get_kung_reply(user_word, last_word, api_key):
     }
 
 # ---------------------------------------------------------
-# 3. 화면 UI 및 메신저 로비 구성
+# 3. 화면 UI 구성
 # ---------------------------------------------------------
 st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
-st.markdown('<div class="arcade-title">💬 AI 뉴스 메신저 스튜디오</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="arcade-subtitle">실시간 서바이벌 채팅 토론 | 누적 점수: <span style="color: #38bdf8;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
+st.markdown('<div class="arcade-title">🎮 AI 뉴스 예능 스튜디오</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="arcade-subtitle">실시간 서바이벌 게임 로비 | 누적 점수: <span style="color: #38bdf8;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
 
+# ---------------------------------------------------------
+# 로비 화면 (설명 없이 깔끔한 타이틀 카드)
+# ---------------------------------------------------------
 if st.session_state['active_chat_game'] is None:
     st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
     l_col1, l_col2 = st.columns(2, gap="large")
@@ -312,16 +301,11 @@ if st.session_state['active_chat_game'] is None:
         st.markdown("""
         <div class="game-lobby-card">
             <div class="card-icon-box">🕵️‍♂️</div>
-            <div class="card-title">마피아42: 메신저 스파이전</div>
-            <div class="card-desc">
-                메신저 단톡방에 입장하여 AI 용의자들의<br>
-                실시간 증언 채팅을 왼쪽에서 확인하고,<br>
-                추리와 투표로 스파이를 색출하세요!
-            </div>
+            <div class="card-title">마피아42: 스파이 잡기</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-        if st.button("🔴 메신저 방 입장하기", key="lobby_mafia_btn", use_container_width=True):
+        if st.button("🔴 마피아42 게임 입장하기", key="lobby_mafia_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "mafia"
             st.session_state['mafia_phase'] = 'init'
             st.session_state['messenger_chats'] = []
@@ -331,25 +315,23 @@ if st.session_state['active_chat_game'] is None:
         st.markdown("""
         <div class="game-lobby-card">
             <div class="card-icon-box">🎤</div>
-            <div class="card-title">뉴스 키워드 쿵쿵따 메신저</div>
-            <div class="card-desc">
-                AI 쇼호스트와 릴레이 끝말잇기 퀴즈 쇼!<br>
-                메신저 창에서 실시간 단어를 주고받으며<br>
-                시사 상식을 겨루는 스피드 대결.
-            </div>
+            <div class="card-title">뉴스 키워드 쿵쿵따 쇼</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-        if st.button("🔵 쿵쿵따 메신저 입장하기", key="lobby_kung_btn", use_container_width=True):
+        if st.button("🔵 쿵쿵따 쇼 입장하기", key="lobby_kung_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "kungkungta"
             random_first_words = ["인공지능", "경제성장", "기후변화", "우주탐사", "디지털혁신", "글로벌무역", "스마트폰"]
             chosen_word = random.choice(random_first_words)
             st.session_state['kung_current_word'] = chosen_word
             st.session_state['kung_history'] = [
-                {"role": "ai", "text": f"반가워! 쿵쿵따 메신저 방에 입장했어. 첫 제시어는 **'{chosen_word}'**이야! 이어줘!"}
+                {"role": "ai", "text": f"반가워! 쿵쿵따 쇼에 입장했어. 첫 제시어는 **'{chosen_word}'**이야! 이어줘!"}
             ]
             st.rerun()
 
+# ---------------------------------------------------------
+# 게임 플레이 화면 (입장 후 상세 가이드 및 룰 설명 제공)
+# ---------------------------------------------------------
 else:
     top_nav1, top_nav2 = st.columns([4, 1])
     with top_nav2:
@@ -361,19 +343,26 @@ else:
     st.markdown("---")
 
     # ---------------------------------------------------------
-    # [마피아 메신저 모드]
+    # [마피아42 게임 모드]
     # ---------------------------------------------------------
     if st.session_state['active_chat_game'] == "mafia":
         if st.session_state['mafia_phase'] == 'init':
-            st.markdown('<div class="game-lobby-card" style="max-width:700px; margin:0 auto; padding:30px;">', unsafe_allow_html=True)
-            st.markdown("### 💬 [긴급 단톡방] 뉴스 스파이 수사 메신저")
-            st.markdown("버튼을 누르면 AI 용의자들이 단톡방에 입장해 실시간 증언을 시작합니다!")
+            st.markdown('<div class="game-lobby-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
+            st.markdown("### 🕵️‍♂️ [마피아42] 뉴스 스파이 추리 게임 가이드")
+            st.markdown("""
+            <div style="color: #9ca3af; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1rem;">
+                📌 <b>게임 룰 설명</b><br>
+                1. 버튼을 누르면 실시간 랜덤 뉴스 기사와 4명의 AI 용의자가 소집됩니다.<br>
+                2. AI 용의자들은 왼쪽에 각자의 증언(팩트 또는 왜곡된 가짜 뉴스)을 말합니다.<br>
+                3. 채팅창에 직접 의견을 남기거나 대화를 나눈 뒤, 가짜 뉴스를 퍼트린 스파이를 지목해 처형하세요!
+            </div>
+            """, unsafe_allow_html=True)
             st.markdown("---")
-            if st.button("🚨 단톡방 토론 시작하기", use_container_width=True):
+            if st.button("🚨 마피아 토론 시작하기", use_container_width=True):
                 if not gemini_key or not client_id:
                     st.error("❌ API Key가 설정되지 않았습니다!")
                 else:
-                    with st.spinner("📲 단톡방 생성 및 용의자 소집 중..."):
+                    with st.spinner("📲 용의자 소집 및 증언 수집 중..."):
                         random_item = fetch_random_naver_news()
                         if random_item:
                             t = random_item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
@@ -383,7 +372,6 @@ else:
                             g_data['title'] = t
                             st.session_state['mafia_game_data'] = g_data
                             
-                            # AI들의 증언을 메신저 채팅 기록으로 세팅 (왼쪽)
                             chats = [{"sender": "시스템", "text": f"📌 [속보 뉴스] {t}"}]
                             for p in g_data['players']:
                                 chats.append({"sender": p['name'], "text": p['statement']})
@@ -395,13 +383,11 @@ else:
         elif st.session_state['mafia_phase'] == 'debate':
             g = st.session_state['mafia_game_data']
             
-            st.markdown(f"#### 📌 단톡방 사건: {g['title']}")
+            st.markdown(f"#### 📌 사건 뉴스: {g['title']}")
             
-            # 메신저 채팅방 UI (왼쪽: AI, 오른쪽: 유저 채팅 내역)
             st.markdown('<div class="messenger-room">', unsafe_allow_html=True)
             for chat in st.session_state['messenger_chats']:
                 if chat['sender'] == "태희 (나)":
-                    # 오른쪽 내 말풍선
                     st.markdown(f"""
                     <div class="msg-row-right">
                         <div>
@@ -417,7 +403,6 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
                 else:
-                    # 왼쪽 AI 말풍선
                     st.markdown(f"""
                     <div class="msg-row-left">
                         <div>
@@ -428,9 +413,8 @@ else:
                     """, unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-            # 유저 채팅 입력창 및 투표 영역
             with st.form(key="msg_form", clear_on_submit=True):
-                user_msg = st.text_input("메신저에 의견이나 반박을 입력하세요", placeholder="예: 3번 말이 이상한 것 같아요!")
+                user_msg = st.text_input("의견이나 반박을 입력하세요", placeholder="예: 3번 말이 이상한 것 같아요!")
                 msg_submit = st.form_submit_button("메시지 보내기 📤", use_container_width=True)
 
             if msg_submit and user_msg.strip():
@@ -455,7 +439,7 @@ else:
             spy_player = g['players'][g['spy_index']]
             
             st.markdown('<div class="game-lobby-card" style="max-width:750px; margin:0 auto; padding:30px;">', unsafe_allow_html=True)
-            st.markdown(f"### ⚖️ [단톡방 심판의 결과]")
+            st.markdown(f"### ⚖️ [심판의 결과]")
             st.markdown(f"💥 **{voted_player['name']}의 최후 변론**: \"{g['defense']}\"")
             st.markdown("---")
             
@@ -468,17 +452,17 @@ else:
 
             st.info(f"💡 **진짜 뉴스 팩트체크**: {g['fact_check']}")
             
-            if st.button("🔄 다음 단톡방 사건 수사하기", use_container_width=True):
+            if st.button("🔄 다음 사건 수사하기", use_container_width=True):
                 st.session_state['mafia_phase'] = 'init'
                 st.session_state['messenger_chats'] = []
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
     # ---------------------------------------------------------
-    # [쿵쿵따 메신저 모드]
+    # [뉴스 키워드 쿵쿵따 쇼 모드]
     # ---------------------------------------------------------
     elif st.session_state['active_chat_game'] == "kungkungta":
-        st.markdown(f"### 🎤 쿵쿵따 메신저 대결 중! (현재 제시어: **{st.session_state['kung_current_word']}**) 구멍 글자: **'{st.session_state['kung_current_word'][-1]}'**")
+        st.markdown(f"### 🎤 쿵쿵따 쇼 대결 중! (현재 제시어: **{st.session_state['kung_current_word']}**) 구멍 글자: **'{st.session_state['kung_current_word'][-1]}'**")
         st.markdown("---")
 
         st.markdown('<div class="messenger-room" style="height:450px;">', unsafe_allow_html=True)
