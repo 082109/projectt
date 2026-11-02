@@ -11,7 +11,7 @@ import random
 from PIL import Image, ImageDraw, ImageFont
 
 # ---------------------------------------------------------
-# 1. 페이지 기본 설정 및 트렌디 현대적 스타일링 (이미지 컨셉 반영)
+# 1. 페이지 설정 및 현대적 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens Studio",
@@ -23,18 +23,15 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800&display=swap');
 
-    /* 화사하고 현대적인 블루 그라데이션 배경 */
     .stApp {
         background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e40af 100%);
         color: #ffffff;
-        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+        font-family: 'Pretendard', sans-serif !important;
     }
     
-    /* 사이드바 스타일링 */
     section[data-testid="stSidebar"] {
         background-color: #0f172a !important;
         border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
-        font-family: 'Pretendard', sans-serif !important;
     }
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] div, 
@@ -57,7 +54,6 @@ st.markdown("""
     }
     
     .hero-title {
-        font-family: 'Pretendard', sans-serif !important;
         font-size: 3.5rem;
         font-weight: 800;
         color: #ffffff;
@@ -65,45 +61,26 @@ st.markdown("""
         margin-top: 20px;
         margin-bottom: 10px;
         letter-spacing: -1px;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     }
     .hero-subtitle {
-        font-family: 'Pretendard', sans-serif !important;
         color: #e0f2fe;
         font-size: 1.25rem;
         text-align: center;
-        margin-bottom: 40px;
+        margin-bottom: 30px;
         font-weight: 400;
     }
 
-    /* 이미지 스타일의 알약 형태(Pill) 입체 검색 캡슐 */
     .search-pill-container {
         background: #ffffff;
         border-radius: 50px;
         padding: 6px 8px 6px 24px;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
         max-width: 800px;
-        margin: 0 auto 40px auto;
+        margin: 0 auto 30px auto;
         display: flex;
         align-items: center;
     }
 
-    /* Streamlit 입력 폼 내부 텍스트 스타일 지정 */
-    div[data-baseweb="input"] {
-        background-color: transparent !important;
-        border: none !important;
-        font-size: 1.2rem !important;
-        font-family: 'Pretendard', sans-serif !important;
-    }
-    div[data-baseweb="input"] input {
-        color: #1e293b !important;
-        font-weight: 500 !important;
-    }
-    div[data-baseweb="input"] input::placeholder {
-        color: #94a3b8 !important;
-    }
-
-    /* 돋보기 검색버튼 (둥근 알약형 파란색) */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
         background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
         color: #ffffff;
@@ -114,53 +91,29 @@ st.markdown("""
         height: 52px;
         box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
         transition: all 0.25s ease;
-        font-family: 'Pretendard', sans-serif !important;
         width: 100%;
     }
-    .stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
+    .stButton > button:hover {
         background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
         box-shadow: 0 8px 25px rgba(56, 189, 248, 0.5);
         transform: translateY(-2px);
     }
 
-    /* 세련된 현대식 Glassmorphism 카드 디자인 */
     .news-card-item {
         background: rgba(255, 255, 255, 0.12);
         backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 20px;
         padding: 22px;
         margin-bottom: 16px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-        transition: all 0.2s ease;
     }
     .news-card-item.selected {
         border: 2.5px solid #38bdf8;
         background: rgba(255, 255, 255, 0.22);
-        box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
     }
-    .news-card-date {
-        font-size: 0.88rem;
-        color: #7dd3fc;
-        margin-bottom: 8px;
-        font-weight: 600;
-    }
-    .news-card-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #ffffff;
-        margin-bottom: 10px;
-        line-height: 1.4;
-    }
-    .news-card-desc {
-        font-size: 0.98rem;
-        color: #e2e8f0;
-        line-height: 1.6;
-        margin-top: 10px;
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
-        padding-top: 10px;
-    }
+    .news-card-date { font-size: 0.88rem; color: #7dd3fc; margin-bottom: 8px; font-weight: 600; }
+    .news-card-title { font-size: 1.25rem; font-weight: 700; color: #ffffff; margin-bottom: 10px; }
+    .news-card-desc { font-size: 0.98rem; color: #e2e8f0; line-height: 1.6; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 10px; }
 
     .right-card-box {
         background: rgba(255, 255, 255, 0.1);
@@ -168,10 +121,8 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 20px;
         padding: 24px;
-        margin-top: 15px;
         margin-bottom: 20px;
     }
-
     .summary-card-box {
         background: rgba(15, 23, 42, 0.5);
         border: 1.5px solid #38bdf8;
@@ -179,36 +130,24 @@ st.markdown("""
         padding: 22px;
         margin-top: 15px;
     }
-
     .image-preview-container {
         background: rgba(15, 23, 42, 0.7);
         border: 2px solid #38bdf8;
         border-radius: 24px;
         padding: 35px;
         margin-top: 30px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
     }
-
-    h1, h2, h3, h4, label {
-        font-family: 'Pretendard', sans-serif !important;
-    }
-
-    hr {
-        border-color: rgba(255, 255, 255, 0.2) !important;
-        margin: 25px 0 !important;
-    }
+    h1, h2, h3, h4, label { font-family: 'Pretendard', sans-serif !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. 세션 상태 초기화 및 폰트 준비
+# 2. 세션 상태 및 도구 함수
 # ---------------------------------------------------------
 if 'step' not in st.session_state:
     st.session_state['step'] = 'search'
-
 if 'page_number' not in st.session_state:
     st.session_state['page_number'] = 1
-
 if 'selected_article_idx' not in st.session_state:
     st.session_state['selected_article_idx'] = 0
 
@@ -220,7 +159,6 @@ def get_korean_font(font_size=18):
             urllib.request.urlretrieve(url, font_path)
         except Exception:
             pass
-    
     try:
         if os.path.exists(font_path):
             return ImageFont.truetype(font_path, font_size)
@@ -233,8 +171,7 @@ client_secret = st.secrets.get("NAVER_CLIENT_SECRET", "").strip()
 gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip()
 
 def parse_pub_date(pub_date_str):
-    if not pub_date_str:
-        return "날짜 정보 없음"
+    if not pub_date_str: return "날짜 정보 없음"
     try:
         dt = datetime.strptime(pub_date_str, "%a, %d %b %Y %H:%M:%S %z")
         return dt.strftime("%Y-%m-%d %H:%M")
@@ -245,11 +182,9 @@ def fetch_naver_news(query, display_count=100):
     search_term = query.strip() if query and query.strip() else "뉴스"
     encText = urllib.parse.quote(search_term)
     url = f"https://naverapihub.apigw.ntruss.com/search/v1/news?query={encText}&display={display_count}&sort=date"
-    
     req = urllib.request.Request(url)
     req.add_header("X-NCP-APIGW-API-KEY-ID", client_id)
     req.add_header("X-NCP-APIGW-API-KEY", client_secret)
-    
     try:
         with urllib.request.urlopen(req) as response:
             if response.getcode() == 200:
@@ -278,20 +213,7 @@ def draw_wrapped_text(draw, text, font, fill, x, y, max_width, line_spacing=4):
 
 def generate_3line_summary(title, desc, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
-    prompt = f"""
-    다음 뉴스 기사의 핵심 내용을 3줄로 알기 쉽게 요약해서 JSON으로 작성해주세요.
-    - 뉴스 제목: {title}
-    - 뉴스 요약: {desc}
-    
-    JSON 형식:
-    {{
-      "summary": [
-        "첫 번째 핵심 요약 문장",
-        "두 번째 핵심 요약 문장",
-        "세 번째 핵심 요약 문장"
-      ]
-    }}
-    """
+    prompt = f"다음 뉴스 기사의 핵심 내용을 3줄로 요약해서 JSON으로 작성해주세요.\n- 제목: {title}\n- 요약: {desc}\n\nJSON 형식:\n{{\"summary\": [\"요약1\", \"요약2\", \"요약3\"]}}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     data = json.dumps(payload).encode('utf-8')
     req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
@@ -304,63 +226,11 @@ def generate_3line_summary(title, desc, api_key):
                 return json.loads(clean_json).get("summary", [])
     except Exception:
         pass
-    return [
-        f"📌 {title[:30]}... 사건 발생",
-        "📌 주요 관계자 및 관련 기관의 대응 진행 중",
-        "📌 향후 사회적·경제적 파급 효과 지속 관찰 필요"
-    ]
-
-def fetch_robust_panel_image(prompt_text, index):
-    clean_prompt = prompt_text.replace("\n", " ").strip()
-    encoded_prompt = urllib.parse.quote(f"2D vibrant anime webtoon style, {clean_prompt}")
-    
-    for _ in range(3):
-        seed = random.randint(100, 9999)
-        ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=400&seed={seed}&nologo=true"
-        try:
-            res = requests.get(ai_image_url, timeout=15)
-            if res.status_code == 200 and len(res.content) > 1500:
-                img = Image.open(io.BytesIO(res.content)).convert("RGB")
-                w, h = img.size
-                if h > 30:
-                    img = img.crop((0, 0, w, h - 30))
-                return img.resize((380, 380))
-        except Exception:
-            time.sleep(0.5)
-            
-    panel_themes = [
-        ("🎨 웹툰 1컷: 사건의 시작", (219, 234, 254), (30, 64, 175)),
-        ("💡 웹툰 2컷: 원인 분석", (254, 226, 226), (185, 28, 28)),
-        ("⚡ 웹툰 3컷: 핵심 대책", (220, 252, 231), (21, 128, 61)),
-        ("🌟 웹툰 4컷: 최종 결론", (254, 243, 199), (180, 83, 9))
-    ]
-    title_text, bg_col, text_col = panel_themes[index % 4]
-    p_img = Image.new("RGB", (380, 380), color=bg_col)
-    draw_p = ImageDraw.Draw(p_img)
-    draw_p.rectangle([15, 15, 365, 365], outline=text_col, width=3)
-    f_p = get_korean_font(16)
-    draw_p.text((50, 160), title_text, fill=text_col, font=f_p)
-    draw_p.text((50, 200), "뉴스 분석 일러스트 완성!", fill=(51, 65, 85), font=get_korean_font(13))
-    return p_img
+    return ["📌 핵심 사건 발생", "📌 주요 내용 분석 진행 중", "📌 향후 동향 주목"]
 
 def generate_comic_scenario(title, desc, user_feedback, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
-    feedback_str = f"User Feedback: {user_feedback}" if user_feedback else ""
-    
-    prompt = f"""
-    당신은 전문 웹툰 작가입니다. 다음 뉴스 기사를 바탕으로 인스타그램 4컷 만화의 각 컷별 영문 이미지 프롬프트와 한국어 대사를 JSON으로 작성하세요.
-    - 뉴스 제목: {title}
-    - 뉴스 요약: {desc}
-    {feedback_str}
-    
-    JSON 형식:
-    {{
-      "cut1_prompt": "webtoon illustration panel 1", "cut1_speech": "1컷 대사",
-      "cut2_prompt": "webtoon illustration panel 2", "cut2_speech": "2컷 대사",
-      "cut3_prompt": "webtoon illustration panel 3", "cut3_speech": "3컷 대사",
-      "cut4_prompt": "webtoon illustration panel 4", "cut4_speech": "4컷 대사"
-    }}
-    """
+    prompt = f"뉴스 기사를 바탕으로 4컷 웹툰 프롬프트와 대사를 JSON으로 작성하세요.\n- 제목: {title}\n- 내용: {desc}\n\nJSON 형식:\n{{\"cut1_prompt\": \"p1\", \"cut1_speech\": \"s1\", \"cut2_prompt\": \"p2\", \"cut2_speech\": \"s2\", \"cut3_prompt\": \"p3\", \"cut3_speech\": \"s3\", \"cut4_prompt\": \"p4\", \"cut4_speech\": \"s4\"}}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     data = json.dumps(payload).encode('utf-8')
     req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
@@ -374,55 +244,52 @@ def generate_comic_scenario(title, desc, user_feedback, api_key):
     except Exception:
         pass
     return {
-        "cut1_prompt": f"webtoon illustration showing start of {title}", "cut1_speech": "이게 무슨 일이지?",
-        "cut2_prompt": f"webtoon illustration showing process of {title}", "cut2_speech": "정말 흥미진진한데?",
-        "cut3_prompt": f"webtoon illustration showing success of {title}", "cut3_speech": "결과가 성공적이야!",
-        "cut4_prompt": f"webtoon illustration showing conclusion of {title}", "cut4_speech": "앞으로가 기대돼!"
+        "cut1_prompt": "start", "cut1_speech": "시작!",
+        "cut2_prompt": "process", "cut2_speech": "진행!",
+        "cut3_prompt": "success", "cut3_speech": "성공!",
+        "cut4_prompt": "conclusion", "cut4_speech": "결론!"
     }
+
+def fetch_robust_panel_image(prompt_text, index):
+    clean_prompt = prompt_text.replace("\n", " ").strip()
+    encoded_prompt = urllib.parse.quote(f"3D vibrant cute claymation style, {clean_prompt}")
+    for _ in range(3):
+        seed = random.randint(100, 9999)
+        ai_image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=400&seed={seed}&nologo=true"
+        try:
+            res = requests.get(ai_image_url, timeout=15)
+            if res.status_code == 200 and len(res.content) > 1500:
+                img = Image.open(io.BytesIO(res.content)).convert("RGB")
+                w, h = img.size
+                if h > 30: img = img.crop((0, 0, w, h - 30))
+                return img.resize((380, 380))
+        except Exception:
+            time.sleep(0.5)
+    p_img = Image.new("RGB", (380, 380), color=(219, 234, 254))
+    draw_p = ImageDraw.Draw(p_img)
+    draw_p.text((50, 180), f"웹툰 {index+1}컷 일러스트", fill=(30, 64, 175), font=get_korean_font(18))
+    return p_img
 
 def create_4cut_comic_image(comic_data, article_title):
     img_w, img_h = 820, 890
     image = Image.new("RGB", (img_w, img_h), color=(255, 255, 255))
     draw = ImageDraw.Draw(image)
 
-    f_maintitle = get_korean_font(16)
-    f_speech = get_korean_font(12)
-    f_cutnum = get_korean_font(11)
-
     draw.rectangle([20, 20, img_w - 20, 70], fill=(15, 23, 42))
-    draw.text((35, 33), f"🎬 [4컷 웹툰] {article_title[:42]}...", fill=(255, 255, 255), font=f_maintitle)
+    draw.text((35, 33), f"🎬 [4컷 웹툰] {article_title[:42]}...", fill=(255, 255, 255), font=get_korean_font(16))
 
-    margin = 20
-    top_offset = 90
-    panel_size = 375
-
-    positions = [
-        (margin, top_offset),
-        (img_w - margin - panel_size, top_offset),
-        (margin, top_offset + panel_size + margin),
-        (img_w - margin - panel_size, top_offset + panel_size + margin)
-    ]
-
+    positions = [(20, 90), (420, 90), (20, 485), (420, 485)]
     for i in range(1, 5):
         px, py = positions[i-1]
-        panel_prompt = comic_data.get(f"cut{i}_prompt", f"webtoon panel {i}")
-        panel_img = fetch_robust_panel_image(panel_prompt, i-1)
-        time.sleep(0.3)
-        
+        panel_img = fetch_robust_panel_image(comic_data.get(f"cut{i}_prompt", "panel"), i-1)
         image.paste(panel_img, (px, py))
-        draw.rectangle([px, py, px + panel_size, py + panel_size], outline=(30, 41, 59), width=3)
-
+        draw.rectangle([px, py, px + 380, py + 380], outline=(30, 41, 59), width=3)
         draw.rectangle([px + 10, py + 10, px + 45, py + 28], fill=(2, 132, 199))
-        draw.text((px + 15, py + 12), f"{i}컷", fill=(255, 255, 255), font=f_cutnum)
-
-        speech_text = comic_data.get(f"cut{i}_speech", "")
-        sb_x1, sb_y1 = px + 12, py + panel_size - 75
-        sb_x2, sb_y2 = px + panel_size - 12, py + panel_size - 12
+        draw.text((px + 15, py + 12), f"{i}컷", fill=(255, 255, 255), font=get_korean_font(11))
         
-        draw.rounded_rectangle([sb_x1, sb_y1, sb_x2, sb_y2], radius=8, fill=(255, 255, 255), outline=(30, 41, 59), width=2)
-        draw_wrapped_text(draw, f"💬 {speech_text}", f_speech, (15, 23, 42), sb_x1 + 10, sb_y1 + 8, (sb_x2 - sb_x1) - 20)
-
-    draw.rectangle([0, 0, img_w - 1, img_h - 1], outline=(30, 41, 59), width=3)
+        speech = comic_data.get(f"cut{i}_speech", "")
+        draw.rounded_rectangle([px + 12, py + 305, px + 368, py + 368], radius=8, fill=(255, 255, 255), outline=(30, 41, 59), width=2)
+        draw_wrapped_text(draw, f"💬 {speech}", get_korean_font(12), (15, 23, 42), px + 22, py + 315, 330)
 
     buf = io.BytesIO()
     image.save(buf, format="PNG")
@@ -430,14 +297,20 @@ def create_4cut_comic_image(comic_data, article_title):
     return buf
 
 # ---------------------------------------------------------
-# 3. 메인 UI 실행
+# 3. 메인 UI 화면 실행
 # ---------------------------------------------------------
 if st.session_state['step'] == 'search':
-    st.markdown('<div style="height: 40px;"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens Studio</div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-subtitle">원하는 뉴스 키워드를 검색하고 고품질 맞춤형 미디어 콘텐츠를 생성해 보세요!</div>', unsafe_allow_html=True)
 
-    # 이미지 스타일 반영: 둥근 알약 형태의 통합 검색창
+    # 💡 [요청 반영] 사용자가 원한 손가락 3D 일러스트 검색창을 화면 상단에 렌더링
+    st.markdown("""
+    <div style="display: flex; justify-content: center; margin-bottom: 25px;">
+        <img src="https://image.pollinations.ai/prompt/3d%20claymation%20cute%20hand%20clicking%20blue%20search%20bar%20with%20magnifying%20glass%20vibrant%20blue%20background?width=750&height=180&nologo=true" style="border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-width: 100%;">
+    </div>
+    """, unsafe_allow_html=True)
+
     with st.form(key="search_form"):
         st.markdown('<div class="search-pill-container">', unsafe_allow_html=True)
         s_col1, s_col2 = st.columns([5, 1.2])
@@ -541,11 +414,7 @@ elif st.session_state['step'] == 'result':
             
             content_format = st.selectbox(
                 "형식 선택",
-                [
-                    "만화 (컷툰/웹툰)",
-                    "포스터",
-                    "인포그래픽"
-                ],
+                ["만화 (컷툰/웹툰)", "포스터", "인포그래픽"],
                 label_visibility="collapsed"
             )
 
@@ -586,7 +455,7 @@ elif st.session_state['step'] == 'result':
                 if not gemini_key:
                     st.error("❌ API Key가 설정되지 않았습니다!")
                 else:
-                    with st.spinner("🔄 4컷 만화 일러스트 및 디자인을 렌더링 중입니다... (예상 소요 시간: 약 10~15초)"):
+                    with st.spinner("🔄 4컷 만화 일러스트 및 디자인을 렌더링 중입니다... (약 10~15초 소요)"):
                         comic_data = generate_comic_scenario(selected_art['title'], selected_art['desc'], "", gemini_key)
                         st.session_state['comic_data'] = comic_data
                         image_bytes = create_4cut_comic_image(comic_data, selected_art['title'])
