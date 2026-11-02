@@ -5,7 +5,7 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 아케이드 디자인 + 추리 벙커 배경 스타일링
+# 1. 페이지 설정 및 아케이드 디자인 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - AI 뉴스 예능 스튜디오",
@@ -17,7 +17,6 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
 
-    /* 두 번째 스크린샷의 서늘한 지하 복도/추리 게임 느낌을 주는 어두운 벙커 배경 */
     .stApp {
         background: radial-gradient(circle at 50% 20%, #1a2238 0%, #090d16 60%, #030508 100%);
         color: #f3f4f6;
@@ -48,7 +47,6 @@ st.markdown("""
         border: 1px solid #a78bfa !important;
     }
 
-    /* 아케이드 게임 타이틀 */
     .arcade-title {
         font-family: 'Black Han Sans', sans-serif !important;
         font-size: 3.8rem;
@@ -69,7 +67,6 @@ st.markdown("""
         text-shadow: 0 0 10px rgba(167, 139, 250, 0.4);
     }
 
-    /* 아케이드 대형 카드 */
     .game-lobby-card {
         background: linear-gradient(145deg, #111827 0%, #0b1120 100%);
         border: 3px solid #374151;
@@ -94,6 +91,16 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
+    /* 뉴스 브리핑 박스 */
+    .news-briefing-box {
+        background: rgba(15, 23, 42, 0.9);
+        border: 2px solid #7c3aed;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+    }
+
     /* 메신저 채팅방 */
     .messenger-room {
         background: #060911;
@@ -103,7 +110,7 @@ st.markdown("""
         max-width: 850px;
         margin: 0 auto 20px auto;
         box-shadow: 0 10px 30px rgba(0,0,0,0.9);
-        height: 520px;
+        height: 450px;
         overflow-y: auto;
     }
 
@@ -367,9 +374,12 @@ else:
                         if random_item:
                             t = random_item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
                             d = random_item.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
+                            l = random_item.get('originallink', random_item.get('link', '#'))
                             
                             g_data = generate_mafia_game(t, d, gemini_key)
                             g_data['title'] = t
+                            g_data['desc'] = d
+                            g_data['link'] = l
                             st.session_state['mafia_game_data'] = g_data
                             
                             chats = [{"sender": "시스템", "text": f"📌 [속보 뉴스] {t}"}]
@@ -383,8 +393,12 @@ else:
         elif st.session_state['mafia_phase'] == 'debate':
             g = st.session_state['mafia_game_data']
             
-            st.markdown(f"#### 📌 사건 뉴스: {g['title']}")
-            
+            # 💡 [요청 반영] 랜덤 출제된 뉴스 전체 기사 내용과 링크를 언제든 펼쳐볼 수 있는 아코디언(Expander) 박스 배치
+            with st.expander("📄 [클릭] 출제된 전체 뉴스 기사 내용 및 원문 확인하기", expanded=False):
+                st.markdown(f"### {g['title']}")
+                st.markdown(f"<p style='color: #e2e8f0; font-size: 1.05rem; line-height: 1.6;'>{g['desc']}</p>", unsafe_allow_html=True)
+                st.markdown(f"[🔗 네이버 뉴스 원문 기사 읽기]({g['link']})")
+
             st.markdown('<div class="messenger-room">', unsafe_allow_html=True)
             for chat in st.session_state['messenger_chats']:
                 if chat['sender'] == "태희 (나)":
