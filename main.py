@@ -11,7 +11,7 @@ import random
 from PIL import Image, ImageDraw, ImageFont
 
 # ---------------------------------------------------------
-# 1. 페이지 기본 설정 및 스타일링 (큼직하게 튜닝)
+# 1. 페이지 기본 설정 및 스타일링 (사이드바 배경 밝게 변경)
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens Studio",
@@ -28,10 +28,31 @@ st.markdown("""
         color: #f3f4f6;
         font-family: 'Noto Serif KR', serif !important;
     }
+    
+    /* 사이드바 배경을 조금 더 밝은 톤(#172033)으로 바꿔서 글씨가 쨍하게 보이도록 설정 */
     section[data-testid="stSidebar"] {
-        background-color: #0f172a;
-        border-right: 1px solid #1e293b;
+        background-color: #172033 !important;
+        border-right: 1px solid #334155 !important;
         font-family: 'Noto Serif KR', serif !important;
+    }
+    section[data-testid="stSidebar"] span, 
+    section[data-testid="stSidebar"] div, 
+    section[data-testid="stSidebar"] a {
+        color: #ffffff !important;
+        font-size: 1.05rem !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stSidebarNav"] a {
+        color: #ffffff !important;
+        background-color: rgba(30, 41, 59, 0.9) !important;
+        border-radius: 10px !important;
+        margin-bottom: 6px !important;
+        padding: 10px 14px !important;
+    }
+    [data-testid="stSidebarNav"] a[aria-current="page"] {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #38bdf8 !important;
     }
     
     .hero-title {
@@ -53,7 +74,6 @@ st.markdown("""
         font-weight: 300;
     }
 
-    /* 큼직하고 시원한 검색창 컨테이너 */
     .search-container {
         background: #0d1527;
         border: 2.5px solid #22d3ee;
@@ -64,7 +84,6 @@ st.markdown("""
         max-width: 900px;
     }
 
-    /* 입력창 내부 글씨와 높이 큼직하게 확장 */
     div[data-baseweb="input"] {
         background-color: transparent !important;
         border: none !important;
@@ -77,7 +96,6 @@ st.markdown("""
         padding: 8px 4px !important;
     }
 
-    /* 검색 버튼 큼직하게 확장 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: #ffffff;
@@ -97,7 +115,6 @@ st.markdown("""
         transform: translateY(-1px);
     }
 
-    /* 뉴스 카드 디자인 */
     .news-card-item {
         background-color: #0f172a;
         border: 1px solid #1e293b;
