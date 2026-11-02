@@ -5,7 +5,7 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 반투명 유리 카드 + 지하 복도 배경 스타일링
+# 1. 페이지 설정 및 메신저 철제 프레임 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - AI 뉴스 예능 스튜디오",
@@ -17,9 +17,8 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
 
-    /* 서늘한 지하 복도/벙커 배경 이미지 적용 (어두운 조명과 사커 그라데이션 오버레이 결합) */
     .stApp {
-        background: linear-gradient(rgba(3, 5, 8, 0.75), rgba(9, 13, 22, 0.85)), 
+        background: linear-gradient(rgba(3, 5, 8, 0.8), rgba(9, 13, 22, 0.9)), 
                     url('https://image.pollinations.ai/prompt/dark%20creepy%20school%20hallway%20locker%20corridor%20flashlight%20horror%20game%20background?width=1920&height=1080&nologo=true');
         background-size: cover;
         background-position: center;
@@ -60,7 +59,7 @@ st.markdown("""
         text-align: center;
         margin-top: 20px;
         margin-bottom: 10px;
-        text-shadow: 0 0 20px rgba(124, 58, 237, 0.8), 0 0 40px rgba(79, 70, 229, 0.6);
+        text-shadow: 0 0 20px rgba(124, 58, 237, 0.8);
         letter-spacing: 2px;
     }
     .arcade-subtitle {
@@ -69,14 +68,11 @@ st.markdown("""
         text-align: center;
         margin-bottom: 40px;
         font-weight: 600;
-        text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
     }
 
-    /* 💡 [핵심] 배경이 은은하게 비치는 반투명 유리(Glassmorphism) 대형 카드 */
     .game-lobby-card {
         background: rgba(11, 17, 32, 0.65);
         backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
         border: 2px solid rgba(255, 255, 255, 0.15);
         border-radius: 28px;
         padding: 45px 30px;
@@ -88,7 +84,6 @@ st.markdown("""
     .game-lobby-card:hover {
         border-color: #a78bfa;
         background: rgba(17, 24, 39, 0.75);
-        box-shadow: 0 0 35px rgba(124, 58, 237, 0.4);
         transform: translateY(-6px);
     }
     .card-icon-box { font-size: 4.5rem; margin-bottom: 20px; }
@@ -100,52 +95,75 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* 뉴스 브리핑 박스 (반투명) */
-    .news-briefing-box {
-        background: rgba(11, 17, 32, 0.85);
-        backdrop-filter: blur(10px);
-        border: 2px solid #7c3aed;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+    /* 💡 [핵심] 사진 속 메신저 최상단 철제 프레임 바 디자인 */
+    .messenger-top-bar {
+        background: #1e2530;
+        border: 2px solid #374151;
+        border-bottom: 2px solid #111827;
+        border-radius: 14px 14px 0 0;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 850px;
+        margin: 0 auto;
+        box-shadow: inset 0 2px 5px rgba(255,255,255,0.05);
+    }
+    .messenger-top-title {
+        font-family: 'Black Han Sans', sans-serif !important;
+        color: #e5e7eb;
+        font-size: 1.1rem;
+        letter-spacing: 1px;
+    }
+    .messenger-top-counter {
+        background: #111827;
+        color: #38bdf8;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.95rem;
+        font-weight: bold;
+        border: 1px solid #374151;
     }
 
-    /* 메신저 채팅방 (반투명) */
+    /* 💡 사진 속 어두운 메신저 채팅방 본체 */
     .messenger-room {
-        background: rgba(6, 9, 17, 0.85);
-        backdrop-filter: blur(12px);
-        border: 2px solid rgba(255, 255, 255, 0.15);
-        border-radius: 20px;
+        background: #090e17;
+        border: 2px solid #374151;
+        border-top: none;
+        border-radius: 0 0 14px 14px;
         padding: 25px;
         max-width: 850px;
         margin: 0 auto 20px auto;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.9);
         height: 450px;
         overflow-y: auto;
     }
 
-    .msg-row-left { display: flex; justify-content: flex-start; margin-bottom: 14px; }
-    .msg-row-right { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+    .msg-row-left { display: flex; justify-content: flex-start; margin-bottom: 16px; }
+    .msg-row-right { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+    
+    /* 사진 속 하얗고 둥근 메신저 말풍선 스타일 */
     .msg-bubble-left {
-        background-color: rgba(31, 41, 55, 0.9);
-        color: #f3f4f6;
+        background-color: #ffffff;
+        color: #111827;
         padding: 12px 18px;
-        border-radius: 4px 18px 18px 18px;
+        border-radius: 18px 18px 18px 4px;
         max-width: 75%;
-        border-left: 4px solid #a78bfa;
         font-size: 1.05rem;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     .msg-bubble-right {
-        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-        color: #ffffff;
+        background-color: #ffffff;
+        color: #111827;
         padding: 12px 18px;
-        border-radius: 18px 4px 18px 18px;
+        border-radius: 18px 18px 4px 18px;
         max-width: 75%;
-        border-right: 4px solid #ffffff;
         font-size: 1.05rem;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    .msg-sender { font-size: 0.8rem; color: #9ca3af; margin-bottom: 3px; font-weight: 700; }
+    .msg-sender { font-size: 0.8rem; color: #9ca3af; margin-bottom: 4px; font-weight: 700; }
 
     /* 네온 버튼 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
@@ -221,7 +239,7 @@ def fetch_random_naver_news():
 def generate_mafia_game(title, desc, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     prompt = f"""
-    당신은 마피아42 스타일의 뉴스 추리 게임 진행자입니다. 다음 뉴스 기사를 바탕으로 게임을 구성하세요.
+    당신은 뉴스 스파이 추리 게임 진행자입니다. 다음 뉴스 기사를 바탕으로 게임을 구성하세요.
     - 뉴스 제목: {title}
     - 뉴스 요약: {desc}
 
@@ -322,11 +340,11 @@ if st.session_state['active_chat_game'] is None:
         st.markdown("""
         <div class="game-lobby-card">
             <div class="card-icon-box">🕵️‍♂️</div>
-            <div class="card-title">마피아42: 스파이 잡기</div>
+            <div class="card-title">스파이 잡기</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-        if st.button("🔴 마피아42 게임 입장하기", key="lobby_mafia_btn", use_container_width=True):
+        if st.button("🔴 스파이 추리 게임 입장하기", key="lobby_mafia_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "mafia"
             st.session_state['mafia_phase'] = 'init'
             st.session_state['messenger_chats'] = []
@@ -360,21 +378,21 @@ else:
 
     st.markdown("---")
 
-    # [마피아 게임 모드]
+    # [스파이 잡기 게임 모드]
     if st.session_state['active_chat_game'] == "mafia":
         if st.session_state['mafia_phase'] == 'init':
             st.markdown('<div class="game-lobby-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
-            st.markdown("### 🕵️‍♂️ [마피아42] 뉴스 스파이 추리 게임 가이드")
+            st.markdown("### 🕵️‍♂️ [스파이 잡기] 뉴스 추리 게임 가이드")
             st.markdown("""
             <div style="color: #cbd5e1; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1rem;">
                 📌 <b>게임 룰 설명</b><br>
                 1. 버튼을 누르면 실시간 랜덤 뉴스 기사와 4명의 AI 용의자가 소집됩니다.<br>
-                2. AI 용의자들은 왼쪽에 각자의 증언(팩트 또는 왜곡된 가짜 뉴스)을 말합니다.<br>
-                3. 채팅창에 직접 의견을 남기거나 대화를 나눈 뒤, 가짜 뉴스를 퍼트린 스파이를 지목해 처형하세요!
+                2. AI 용의자들은 메신저 창에 각자의 증언(팩트 또는 왜곡된 가짜 뉴스)을 남깁니다.<br>
+                3. 대화 내용을 분석한 뒤, 가짜 뉴스를 퍼트린 스파이를 지목해 처형하세요!
             </div>
             """, unsafe_allow_html=True)
             st.markdown("---")
-            if st.button("🚨 마피아 토론 시작하기", use_container_width=True):
+            if st.button("🚨 스파이 추리 토론 시작하기", use_container_width=True):
                 if not gemini_key or not client_id:
                     st.error("❌ API Key가 설정되지 않았습니다!")
                 else:
@@ -407,6 +425,15 @@ else:
                 st.markdown(f"<p style='color: #e2e8f0; font-size: 1.05rem; line-height: 1.6;'>{g['desc']}</p>", unsafe_allow_html=True)
                 st.markdown(f"[🔗 네이버 뉴스 원문 기사 읽기]({g['link']})")
 
+            # 💡 [요청 반영] 사진과 똑같은 철제 메신저 상단 바 추가
+            st.markdown("""
+            <div class="messenger-top-bar">
+                <div class="messenger-top-title">💬 메신저 단톡방</div>
+                <div class="messenger-top-counter">28/104</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 사진과 똑같은 메신저 채팅방 본체
             st.markdown('<div class="messenger-room">', unsafe_allow_html=True)
             for chat in st.session_state['messenger_chats']:
                 if chat['sender'] == "태희 (나)":
@@ -436,8 +463,8 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
             with st.form(key="msg_form", clear_on_submit=True):
-                user_msg = st.text_input("의견이나 반박을 입력하세요", placeholder="예: 3번 말이 이상한 것 같아요!")
-                msg_submit = st.form_submit_button("메시지 보내기 📤", use_container_width=True)
+                user_msg = st.text_input("메시지 입력", placeholder="예: 3번 말이 이상한 것 같아요!")
+                msg_submit = st.form_submit_button("메시지 전송 📤", use_container_width=True)
 
             if msg_submit and user_msg.strip():
                 st.session_state['messenger_chats'].append({"sender": "태희 (나)", "text": user_msg.strip()})
@@ -485,7 +512,14 @@ else:
         st.markdown(f"### 🎤 쿵쿵따 쇼 대결 중! (현재 제시어: **{st.session_state['kung_current_word']}**) 구멍 글자: **'{st.session_state['kung_current_word'][-1]}'**")
         st.markdown("---")
 
-        st.markdown('<div class="messenger-room" style="height:450px;">', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="messenger-top-bar">
+            <div class="messenger-top-title">💬 쿵쿵따 퀴즈 방</div>
+            <div class="messenger-top-counter">12/50</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="messenger-room" style="height:400px;">', unsafe_allow_html=True)
         for chat in st.session_state['kung_history']:
             if chat['role'] == 'ai':
                 st.markdown(f"""
