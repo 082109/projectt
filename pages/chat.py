@@ -5,11 +5,11 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 다크 네이비 프리미엄 스타일링 (사이드바 배경 밝게 변경)
+# 1. 페이지 설정 및 다크 네이비 프리미엄 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="FrameLens - AI 뉴스 예능 & 퀴즈 쇼",
-    page_icon="🎮",
+    page_title="FrameLens - AI 마피아 뉴스 퀴즈 스튜디오",
+    page_icon="🕵️‍♂️",
     layout="wide"
 )
 
@@ -23,7 +23,6 @@ st.markdown("""
         font-family: 'Noto Serif KR', serif !important;
     }
     
-    /* 사이드바 배경을 밝은 톤(#172033)으로 변경하여 가독성 극대화 */
     section[data-testid="stSidebar"] {
         background-color: #172033 !important;
         border-right: 1px solid #334155 !important;
@@ -78,14 +77,20 @@ st.markdown("""
         box-shadow: 0 0 30px rgba(34, 211, 238, 0.2);
     }
 
-    .search-box {
-        background: #0d1527;
-        border: 2px solid #38bdf8;
-        border-radius: 20px;
-        padding: 15px 25px;
-        max-width: 850px;
-        margin: 0 auto 25px auto;
-        box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
+    .chat-bubble-ai {
+        background-color: #1e293b;
+        border-left: 4px solid #38bdf8;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    .chat-bubble-user {
+        background-color: #0f2942;
+        border-right: 4px solid #22d3ee;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        text-align: right;
     }
 
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
@@ -119,10 +124,10 @@ st.markdown("""
 if 'total_score' not in st.session_state:
     st.session_state['total_score'] = 0
 
-if 'spy_game_data' not in st.session_state:
-    st.session_state['spy_game_data'] = None
-if 'spy_submitted' not in st.session_state:
-    st.session_state['spy_submitted'] = False
+if 'mafia_phase' not in st.session_state:
+    st.session_state['mafia_phase'] = 'init' # init, debate, result
+if 'mafia_game_data' not in st.session_state:
+    st.session_state['mafia_game_data'] = None
 
 if 'kung_history' not in st.session_state:
     st.session_state['kung_history'] = [
@@ -153,24 +158,27 @@ def fetch_naver_news(query, display_count=5):
     except Exception:
         return []
 
-def generate_spy_game(title, desc, api_key):
+def generate_mafia_game(title, desc, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     prompt = f"""
-    당신은 뉴스 팩트체크 게임 출제자입니다. 다음 진짜 뉴스 기사를 바탕으로 4개의 요약 문장을 만들어주세요.
-    단, 4개 중 3개는 진짜 기사 내용(Fact)이고, 1개는 교묘하게 수치나 핵심 사실을 약간 왜곡한 '가짜 문장(Spy Fake)'이어야 합니다.
+    당신은 마피아42 스타일의 뉴스 추리 게임 진행자입니다. 다음 뉴스 기사를 바탕으로 게임을 구성하세요.
     - 뉴스 제목: {title}
     - 뉴스 요약: {desc}
-    
-    반드시 아래 JSON 포맷으로만 답변하세요:
+
+    4명의 플레이어(1: 김시민, 2: 박기자, 3: 최학자, 4: 이스파이)가 있습니다.
+    이 중 한 명은 스파이라서 뉴스 내용을 거짓으로 주장하거나 왜곡된 발언을 합니다.
+
+    JSON 형식으로 아래처럼 답하세요:
     {{
-      "statements": [
-        "1번 문장 내용",
-        "2번 문장 내용",
-        "3번 문장 내용",
-        "4번 문장 내용"
+      "players": [
+        {{"name": "김시민", "role": "시민", "statement": "진짜 기사 관련 1번 증언"}},
+        {{"name": "박기자", "role": "시민", "statement": "진짜 기사 관련 2번 증언"}},
+        {{"name": "최학자", "role": "시민", "statement": "진짜 기사 관련 3번 증언"}},
+        {{"name": "이스파이", "role": "스파이", "statement": "교묘하게 왜곡된 가짜 뉴스 증언"}}
       ],
-      "fake_index": 가짜 문장의 인덱스 번호 (0, 1, 2, 3 중 하나),
-      "explanation": "왜 이 문장이 가짜(스파이)인지와 실제 사실에 대한 유쾌한 팩트체크 해설"
+      "spy_index": 3,
+      "defense": "스파이가 최후의 변론으로 하는 구차한 변명",
+      "fact_check": "진짜 뉴스 팩트체크 해설"
     }}
     """
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -182,18 +190,24 @@ def generate_spy_game(title, desc, api_key):
                 res_json = json.loads(response.read().decode('utf-8'))
                 raw_text = res_json['candidates'][0]['content']['parts'][0]['text']
                 clean_json = raw_text[raw_text.find("{"):raw_text.rfind("}")+1]
-                return json.loads(clean_json)
+                data = json.loads(clean_json)
+                random.shuffle(data['players'])
+                for idx, p in enumerate(data['players']):
+                    if p['role'] == '스파이':
+                        data['spy_index'] = idx
+                return data
     except Exception:
         pass
     return {
-        "statements": [
-            f"{title} 관련 첫 번째 핵심 보도 내용입니다.",
-            f"이 사건은 최근 큰 이슈가 되어 사회적 관심이 높습니다.",
-            f"전문가들은 이 사건으로 인해 내일부터 외계로 이주한다고 밝혔습니다.",
-            f"{desc[:40]}... 의 내용이 기사에 포함되어 있습니다."
+        "players": [
+            {"name": "김시민", "role": "시민", "statement": f"이번 기사는 {title[:15]} 관련 사건이 확실합니다."},
+            {"name": "박기자", "role": "시민", "statement": f"보도된 바에 따르면 {desc[:25]} 내용입니다."},
+            {"name": "최학자", "role": "시민", "statement": "전문가 분석 결과도 기사 본문과 동일합니다."},
+            {"name": "이스파이", "role": "스파이", "statement": "사실 이번 기사는 전부 거짓이며 외계인이 개입했습니다!"}
         ],
-        "fake_index": 2,
-        "explanation": "3번 문장은 AI 스파이가 조작한 가짜 정보입니다!"
+        "spy_index": 3,
+        "defense": "저는 진짜 시민입니다! 저를 처형하면 스파이에게 이기게 됩니다!",
+        "fact_check": "4번 증언은 완전히 왜곡된 가짜 뉴스입니다."
     }
 
 def get_kung_reply(user_word, last_word, api_key):
@@ -233,76 +247,95 @@ def get_kung_reply(user_word, last_word, api_key):
     }
 
 # ---------------------------------------------------------
-# 3. 챗 화면 UI 구성 (사이드바 모드 선택)
+# 3. 챗 화면 UI 구성
 # ---------------------------------------------------------
 st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-title">🎮 AI 뉴스 예능 & 스파이 퀴즈 쇼</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="hero-subtitle">미디어 탐정 능력을 시험하고 AI와 쿵쿵따 게임을 즐겨보세요! | 총 누적 점수: <span style="color: #22d3ee; font-weight: bold; font-size: 1.2rem;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-title">🎮 AI 뉴스 예능 & 마피아 스튜디오</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="hero-subtitle">마피아42 방식의 뉴스 스파이 추리 게임과 쿵쿵따 쇼! | 총 점수: <span style="color: #22d3ee; font-weight: bold; font-size: 1.2rem;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
 
-game_mode = st.sidebar.radio("🎯 예능 퀴즈 모드 선택", ["🕵️‍♂️ 가짜 뉴스 스파이 잡기", "🎤 뉴스 키워드 쿵쿵따 쇼"])
+game_mode = st.sidebar.radio("🎯 예능 모드 선택", ["🕵️‍♂️ 마피아42: 가짜 뉴스 스파이 투표", "🎤 뉴스 키워드 쿵쿵따 쇼"])
 st.sidebar.markdown("---")
-st.sidebar.info("💡 뉴스를 바탕으로 AI와 두뇌 게임을 즐겨보세요!")
 
 # ---------------------------------------------------------
-# [모드 1] 가짜 뉴스 스파이 잡기 게임
+# [모드 1] 마피아42 스타일 스파이 잡기 게임
 # ---------------------------------------------------------
-if game_mode == "🕵️‍♂️ 가짜 뉴스 스파이 잡기":
-    st.markdown('<div class="search-box">', unsafe_allow_html=True)
-    search_keyword = st.text_input("스파이를 추적할 뉴스 주제 입력", placeholder="예: 딥페이크, 인공지능, 우주 탐사, 경제")
-    if st.button("🔍 뉴스 스파이 사건 수사 시작", use_container_width=True):
-        if not gemini_key or not client_id:
-            st.error("❌ API Key가 설정되지 않았습니다!")
-        elif not search_keyword.strip():
-            st.warning("⚠️ 검색어를 입력해 주세요!")
-        else:
-            with st.spinner("🕵️‍♂️ AI가 진짜 기사 사이에 가짜 정보(스파이)를 몰래 섞는 중입니다..."):
-                news_items = fetch_naver_news(search_keyword, display_count=5)
-                if news_items:
-                    target_news = random.choice(news_items)
-                    t = target_news.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"')
-                    d = target_news.get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"')
-                    
-                    g_data = generate_spy_game(t, d, gemini_key)
-                    g_data['news_title'] = t
-                    st.session_state['spy_game_data'] = g_data
-                    st.session_state['spy_submitted'] = False
-                    st.rerun()
-                else:
-                    st.warning("관련 뉴스를 찾지 못했습니다.")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    if st.session_state['spy_game_data']:
-        g = st.session_state['spy_game_data']
+if game_mode == "🕵️‍♂️ 마피아42: 가짜 뉴스 스파이 투표":
+    if st.session_state['mafia_phase'] == 'init':
         st.markdown('<div class="game-box">', unsafe_allow_html=True)
-        st.markdown(f"#### 📌 사건 기사: {g['news_title']}")
-        st.markdown("---")
-        st.markdown("### ❓ 다음 4개 요약 문장 중 '거짓(가짜 뉴스)'인 스파이 문장은 몇 번일까요?")
+        st.markdown("### 🕵️‍♂️ [마피아42 모드] 뉴스 스파이 추리 게임 시작")
+        st.markdown("시민 플레이어들 속에 몰래 섞여 들어와 가짜 뉴스를 유포하는 **스파이(마피아)**를 찾아 처형하세요!")
         
-        options = [f"{idx+1}번: {stmt}" for idx, stmt in enumerate(g['statements'])]
-        user_choice = st.radio("스파이 지목하기", options=options, key="spy_radio")
-        
-        if not st.session_state['spy_submitted']:
-            if st.button("🚨 스파이 검거 제출", use_container_width=True):
-                selected_idx = options.index(user_choice)
-                if selected_idx == g['fake_index']:
-                    st.session_state['total_score'] += 15
-                    st.session_state['spy_submitted'] = 'correct'
-                else:
-                    st.session_state['spy_submitted'] = 'wrong'
-                st.rerun()
-        else:
-            if st.session_state['spy_submitted'] == 'correct':
-                st.success("🎉 완벽한 검거! AI 스파이(가짜 문장)를 정확히 찾아냈습니다! (+15점)")
+        search_kw = st.text_input("수사할 뉴스 주제 입력", placeholder="예: AI 윤리, 경제, 기후위기, 우주탐사")
+        if st.button("🚨 마피아 게임 세션 생성 (낮 토론 시작)", use_container_width=True):
+            if not gemini_key or not client_id:
+                st.error("❌ API Key가 설정되지 않았습니다!")
+            elif not search_kw.strip():
+                st.warning("⚠️ 주제를 입력해주세요!")
             else:
-                st.error(f"❌ 검거 실패! 진짜 스파이는 {g['fake_index']+1}번 문장이었습니다!")
+                with st.spinner("🔔 밤이 지나고 낮이 되었습니다. 플레이어들의 증언을 수집 중..."):
+                    items = fetch_naver_news(search_kw, 5)
+                    if items:
+                        t = items[0].get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"')
+                        d = items[0].get('description', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"')
+                        st.session_state['mafia_game_data'] = generate_mafia_game(t, d, gemini_key)
+                        st.session_state['mafia_game_data']['title'] = t
+                        st.session_state['mafia_phase'] = 'debate'
+                        st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    elif st.session_state['mafia_phase'] == 'debate':
+        g = st.session_state['mafia_game_data']
+        st.markdown('<div class="game-box">', unsafe_allow_html=True)
+        st.markdown(f"### ☀️ [낮 토론] 사건: {g['title']}")
+        st.markdown("---")
+        st.markdown("#### 🗣️ 참가자들의 실시간 발언 증언")
+        
+        for idx, p in enumerate(g['players']):
+            st.markdown(f"""
+            <div class="chat-bubble-ai">
+                <strong>👤 {p['name']}</strong>: "{p['statement']}"
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.markdown("### 🗳️ [투표 타임] 가짜 뉴스를 유포하는 스파이는 누구인가요?")
+        
+        player_names = [f"{idx+1}번: {p['name']}" for idx, p in enumerate(g['players'])]
+        selected_player = st.radio("처형할 스파이를 지목하세요", options=player_names)
+        
+        if st.button("⚖️ 지목한 플레이어 처형 투표 진행", use_container_width=True):
+            sel_idx = player_names.index(selected_player)
+            st.session_state['selected_vote'] = sel_idx
+            st.session_state['mafia_phase'] = 'result'
+            st.rerun()
             
-            st.info(f"💡 **팩트체크 해설**: {g['explanation']}")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    elif st.session_state['mafia_phase'] == 'result':
+        g = st.session_state['mafia_game_data']
+        voted_idx = st.session_state['selected_vote']
+        voted_player = g['players'][voted_idx]
+        spy_player = g['players'][g['spy_index']]
+        
+        st.markdown('<div class="game-box">', unsafe_allow_html=True)
+        st.markdown(f"### ⚖️ [최후의 변론 및 처형 결과]")
+        st.markdown(f"💥 **지목된 플레이어 ({voted_player['name']})의 최후 변론**: \"{g['defense']}\"")
+        st.markdown("---")
+        
+        if voted_idx == g['spy_index']:
+            st.balloons()
+            st.success(f"🎉 [시민 승리] {voted_player['name']}(은)는 진짜 AI 스파이였습니다! (+20점)")
+            st.session_state['total_score'] += 20
+        else:
+            st.error(f"💀 [스파이 승리] 억울한 시민({voted_player['name']})이 처형되었습니다! 진짜 스파이는 **{spy_player['name']}**이었습니다!")
+
+        st.info(f"💡 **팩트체크**: {g['fact_check']}")
+        
+        if st.button("🔄 다음 마피아 세션 플레이하기", use_container_width=True):
+            st.session_state['mafia_phase'] = 'init'
+            st.session_state['mafia_game_data'] = None
+            st.rerun()
             
-            if st.button("🔄 다음 뉴스 사건 수사하기", use_container_width=True):
-                st.session_state['spy_game_data'] = None
-                st.session_state['spy_submitted'] = False
-                st.rerun()
-                
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
