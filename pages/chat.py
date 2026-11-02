@@ -5,7 +5,7 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 아케이드 디자인 스타일링
+# 1. 페이지 설정 및 반투명 유리 카드 + 지하 복도 배경 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - AI 뉴스 예능 스튜디오",
@@ -17,15 +17,20 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
 
+    /* 서늘한 지하 복도/벙커 배경 이미지 적용 (어두운 조명과 사커 그라데이션 오버레이 결합) */
     .stApp {
-        background: radial-gradient(circle at 50% 20%, #1a2238 0%, #090d16 60%, #030508 100%);
+        background: linear-gradient(rgba(3, 5, 8, 0.75), rgba(9, 13, 22, 0.85)), 
+                    url('https://image.pollinations.ai/prompt/dark%20creepy%20school%20hallway%20locker%20corridor%20flashlight%20horror%20game%20background?width=1920&height=1080&nologo=true');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
         color: #f3f4f6;
         font-family: 'Noto Serif KR', serif !important;
     }
     
     section[data-testid="stSidebar"] {
-        background-color: #070a12 !important;
-        border-right: 1px solid #1e293b !important;
+        background-color: rgba(7, 10, 18, 0.9) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] div, 
@@ -59,28 +64,32 @@ st.markdown("""
         letter-spacing: 2px;
     }
     .arcade-subtitle {
-        color: #a78bfa;
+        color: #cbd5e1;
         font-size: 1.25rem;
         text-align: center;
         margin-bottom: 40px;
         font-weight: 600;
-        text-shadow: 0 0 10px rgba(167, 139, 250, 0.4);
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
     }
 
+    /* 💡 [핵심] 배경이 은은하게 비치는 반투명 유리(Glassmorphism) 대형 카드 */
     .game-lobby-card {
-        background: linear-gradient(145deg, #111827 0%, #0b1120 100%);
-        border: 3px solid #374151;
+        background: rgba(11, 17, 32, 0.65);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 2px solid rgba(255, 255, 255, 0.15);
         border-radius: 28px;
         padding: 45px 30px;
         text-align: center;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.03);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+        transition: all 0.3s ease;
         height: 100%;
     }
     .game-lobby-card:hover {
         border-color: #a78bfa;
-        box-shadow: 0 0 40px rgba(124, 58, 237, 0.5), inset 0 0 30px rgba(124, 58, 237, 0.2);
-        transform: translateY(-8px);
+        background: rgba(17, 24, 39, 0.75);
+        box-shadow: 0 0 35px rgba(124, 58, 237, 0.4);
+        transform: translateY(-6px);
     }
     .card-icon-box { font-size: 4.5rem; margin-bottom: 20px; }
     .card-title {
@@ -91,9 +100,10 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* 뉴스 브리핑 박스 */
+    /* 뉴스 브리핑 박스 (반투명) */
     .news-briefing-box {
-        background: rgba(15, 23, 42, 0.9);
+        background: rgba(11, 17, 32, 0.85);
+        backdrop-filter: blur(10px);
         border: 2px solid #7c3aed;
         border-radius: 16px;
         padding: 20px;
@@ -101,10 +111,11 @@ st.markdown("""
         box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
     }
 
-    /* 메신저 채팅방 */
+    /* 메신저 채팅방 (반투명) */
     .messenger-room {
-        background: #060911;
-        border: 2.5px solid #374151;
+        background: rgba(6, 9, 17, 0.85);
+        backdrop-filter: blur(12px);
+        border: 2px solid rgba(255, 255, 255, 0.15);
         border-radius: 20px;
         padding: 25px;
         max-width: 850px;
@@ -117,14 +128,13 @@ st.markdown("""
     .msg-row-left { display: flex; justify-content: flex-start; margin-bottom: 14px; }
     .msg-row-right { display: flex; justify-content: flex-end; margin-bottom: 14px; }
     .msg-bubble-left {
-        background-color: #1f2937;
+        background-color: rgba(31, 41, 55, 0.9);
         color: #f3f4f6;
         padding: 12px 18px;
         border-radius: 4px 18px 18px 18px;
         max-width: 75%;
         border-left: 4px solid #a78bfa;
         font-size: 1.05rem;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
     .msg-bubble-right {
         background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
@@ -134,7 +144,6 @@ st.markdown("""
         max-width: 75%;
         border-right: 4px solid #ffffff;
         font-size: 1.05rem;
-        box-shadow: 0 4px 10px rgba(124,58,237,0.4);
     }
     .msg-sender { font-size: 0.8rem; color: #9ca3af; margin-bottom: 3px; font-weight: 700; }
 
@@ -357,7 +366,7 @@ else:
             st.markdown('<div class="game-lobby-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
             st.markdown("### 🕵️‍♂️ [마피아42] 뉴스 스파이 추리 게임 가이드")
             st.markdown("""
-            <div style="color: #9ca3af; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1rem;">
+            <div style="color: #cbd5e1; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1rem;">
                 📌 <b>게임 룰 설명</b><br>
                 1. 버튼을 누르면 실시간 랜덤 뉴스 기사와 4명의 AI 용의자가 소집됩니다.<br>
                 2. AI 용의자들은 왼쪽에 각자의 증언(팩트 또는 왜곡된 가짜 뉴스)을 말합니다.<br>
@@ -393,7 +402,6 @@ else:
         elif st.session_state['mafia_phase'] == 'debate':
             g = st.session_state['mafia_game_data']
             
-            # 💡 [요청 반영] 랜덤 출제된 뉴스 전체 기사 내용과 링크를 언제든 펼쳐볼 수 있는 아코디언(Expander) 박스 배치
             with st.expander("📄 [클릭] 출제된 전체 뉴스 기사 내용 및 원문 확인하기", expanded=False):
                 st.markdown(f"### {g['title']}")
                 st.markdown(f"<p style='color: #e2e8f0; font-size: 1.05rem; line-height: 1.6;'>{g['desc']}</p>", unsafe_allow_html=True)
