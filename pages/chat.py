@@ -5,22 +5,23 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 추리 탐정 스타일링
+# 1. 페이지 설정 및 아케이드 디자인 + 추리 벙커 배경 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="FrameLens - 미스터리 수사국",
-    page_icon="🔍",
+    page_title="FrameLens - AI 뉴스 예능 스튜디오",
+    page_icon="🕹️",
     layout="wide"
 )
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
 
+    /* 두 번째 스크린샷의 서늘한 지하 복도/추리 게임 느낌을 주는 어두운 벙커 배경 */
     .stApp {
-        background-color: #0b0f19;
-        color: #e2e8f0;
-        font-family: 'Nanum Myeongjo', serif !important;
+        background: radial-gradient(circle at 50% 20%, #1a2238 0%, #090d16 60%, #030508 100%);
+        color: #f3f4f6;
+        font-family: 'Noto Serif KR', serif !important;
     }
     
     section[data-testid="stSidebar"] {
@@ -30,122 +31,128 @@ st.markdown("""
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] div, 
     section[data-testid="stSidebar"] a {
-        color: #cbd5e1 !important;
+        color: #ffffff !important;
         font-size: 1.05rem !important;
         font-weight: 600 !important;
     }
     [data-testid="stSidebarNav"] a {
-        color: #e2e8f0 !important;
-        background-color: rgba(30, 41, 59, 0.6) !important;
-        border-radius: 8px !important;
+        color: #ffffff !important;
+        background-color: rgba(30, 41, 59, 0.8) !important;
+        border-radius: 10px !important;
         margin-bottom: 6px !important;
         padding: 10px 14px !important;
     }
     [data-testid="stSidebarNav"] a[aria-current="page"] {
-        background: #1e3a8a !important;
+        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
         color: #ffffff !important;
-        border: 1px solid #3b82f6 !important;
+        border: 1px solid #a78bfa !important;
     }
 
-    /* 수사국 타이틀 */
-    .investigation-title {
-        font-family: 'Nanum Myeongjo', serif !important;
-        font-size: 3rem;
-        font-weight: 800;
-        color: #f8fafc;
+    /* 아케이드 게임 타이틀 */
+    .arcade-title {
+        font-family: 'Black Han Sans', sans-serif !important;
+        font-size: 3.8rem;
+        font-weight: 400;
+        color: #ffffff;
         text-align: center;
         margin-top: 20px;
-        margin-bottom: 5px;
-        letter-spacing: -1px;
+        margin-bottom: 10px;
+        text-shadow: 0 0 20px rgba(124, 58, 237, 0.8), 0 0 40px rgba(79, 70, 229, 0.6);
+        letter-spacing: 2px;
     }
-    .investigation-subtitle {
-        color: #94a3b8;
-        font-size: 1.1rem;
+    .arcade-subtitle {
+        color: #a78bfa;
+        font-size: 1.25rem;
         text-align: center;
-        margin-bottom: 30px;
-        font-family: 'Noto Sans KR', sans-serif !important;
+        margin-bottom: 40px;
+        font-weight: 600;
+        text-shadow: 0 0 10px rgba(167, 139, 250, 0.4);
     }
 
-    /* 로비 카드 (수사 파일 스타일) */
-    .file-card {
-        background: #111827;
-        border: 1px solid #374151;
-        border-radius: 12px;
-        padding: 50px 25px;
+    /* 아케이드 대형 카드 */
+    .game-lobby-card {
+        background: linear-gradient(145deg, #111827 0%, #0b1120 100%);
+        border: 3px solid #374151;
+        border-radius: 28px;
+        padding: 45px 30px;
         text-align: center;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        transition: all 0.2s ease;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.03);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         height: 100%;
     }
-    .file-card:hover {
-        border-color: #60a5fa;
-        background: #131c2e;
+    .game-lobby-card:hover {
+        border-color: #a78bfa;
+        box-shadow: 0 0 40px rgba(124, 58, 237, 0.5), inset 0 0 30px rgba(124, 58, 237, 0.2);
+        transform: translateY(-8px);
     }
-    .file-icon { font-size: 4rem; margin-bottom: 20px; }
-    .file-title {
-        font-family: 'Nanum Myeongjo', serif !important;
+    .card-icon-box { font-size: 4.5rem; margin-bottom: 20px; }
+    .card-title {
+        font-family: 'Black Han Sans', sans-serif !important;
         font-size: 2rem;
-        font-weight: 700;
         color: #ffffff;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
+        letter-spacing: 1px;
     }
 
-    /* 메신저 수사 채팅방 */
+    /* 메신저 채팅방 */
     .messenger-room {
-        background: #070a12;
-        border: 1px solid #334155;
-        border-radius: 12px;
+        background: #060911;
+        border: 2.5px solid #374151;
+        border-radius: 20px;
         padding: 25px;
         max-width: 850px;
         margin: 0 auto 20px auto;
-        box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
-        height: 500px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+        height: 520px;
         overflow-y: auto;
     }
 
     .msg-row-left { display: flex; justify-content: flex-start; margin-bottom: 14px; }
     .msg-row-right { display: flex; justify-content: flex-end; margin-bottom: 14px; }
     .msg-bubble-left {
-        background-color: #1e293b;
-        color: #f1f5f9;
-        padding: 12px 16px;
-        border-radius: 4px 12px 12px 12px;
+        background-color: #1f2937;
+        color: #f3f4f6;
+        padding: 12px 18px;
+        border-radius: 4px 18px 18px 18px;
         max-width: 75%;
-        border-left: 3px solid #60a5fa;
-        font-family: 'Noto Sans KR', sans-serif !important;
-        font-size: 1rem;
+        border-left: 4px solid #a78bfa;
+        font-size: 1.05rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
     .msg-bubble-right {
-        background-color: #1d4ed8;
+        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
         color: #ffffff;
-        padding: 12px 16px;
-        border-radius: 12px 4px 12px 12px;
+        padding: 12px 18px;
+        border-radius: 18px 4px 18px 18px;
         max-width: 75%;
-        border-right: 3px solid #93c5fd;
-        font-family: 'Noto Sans KR', sans-serif !important;
-        font-size: 1rem;
-    }
-    .msg-sender { font-size: 0.8rem; color: #94a3b8; margin-bottom: 3px; font-weight: 700; font-family: 'Noto Sans KR', sans-serif !important; }
-
-    /* 버튼 스타일 */
-    .stButton > button, div[data-testid="stFormSubmitButton"] > button {
-        background: #1e3a8a;
-        color: #ffffff;
-        border: 1px solid #3b82f6;
-        border-radius: 10px;
-        font-weight: 700;
+        border-right: 4px solid #ffffff;
         font-size: 1.05rem;
-        height: 50px;
-        font-family: 'Noto Sans KR', sans-serif !important;
+        box-shadow: 0 4px 10px rgba(124,58,237,0.4);
+    }
+    .msg-sender { font-size: 0.8rem; color: #9ca3af; margin-bottom: 3px; font-weight: 700; }
+
+    /* 네온 버튼 */
+    .stButton > button, div[data-testid="stFormSubmitButton"] > button {
+        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+        color: #ffffff;
+        border: 2px solid #a78bfa;
+        border-radius: 16px;
+        font-weight: 800;
+        font-size: 1.15rem;
+        height: 55px;
+        box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+        transition: all 0.2s ease;
+        font-family: 'Black Han Sans', sans-serif !important;
+        letter-spacing: 1px;
         width: 100%;
-        transition: background 0.2s;
     }
     .stButton > button:hover {
-        background: #2563eb;
-        border-color: #60a5fa;
+        box-shadow: 0 0 25px rgba(167, 139, 250, 0.8);
+        transform: translateY(-2px);
+        border-color: #ffffff;
     }
 
-    h1, h2, h3, h4, label { font-family: 'Nanum Myeongjo', serif !important; }
+    h1, h2, h3, h4, label { font-family: 'Noto Serif KR', serif !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -198,11 +205,11 @@ def fetch_random_naver_news():
 def generate_mafia_game(title, desc, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     prompt = f"""
-    당신은 추리 게임 진행자입니다. 다음 뉴스 기사를 바탕으로 게임을 구성하세요.
+    당신은 마피아42 스타일의 뉴스 추리 게임 진행자입니다. 다음 뉴스 기사를 바탕으로 게임을 구성하세요.
     - 뉴스 제목: {title}
     - 뉴스 요약: {desc}
 
-    4명의 용의자(1: 김시민, 2: 박기자, 3: 최학자, 4: 이스파이)가 있습니다.
+    4명의 AI 플레이어(1: 김시민, 2: 박기자, 3: 최학자, 4: 이스파이)가 있습니다.
     이 중 한 명은 스파이라서 뉴스 내용을 거짓으로 주장하거나 왜곡된 발언을 합니다.
 
     JSON 형식으로 아래처럼 답하세요:
@@ -287,8 +294,8 @@ def get_kung_reply(user_word, last_word, api_key):
 # 3. 화면 UI 구성
 # ---------------------------------------------------------
 st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
-st.markdown('<div class="investigation-title">🔍 미스터리 수사국</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="investigation-subtitle">실시간 가짜 뉴스 색출 및 추리 | 누적 점수: <span style="color: #60a5fa; font-weight:700;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
+st.markdown('<div class="arcade-title">🕹️ AI 예능 스튜디오 아케이드</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="arcade-subtitle">실시간 서바이벌 추리 & 퀴즈 쇼 | 누적 점수: <span style="color: #38bdf8;">{st.session_state["total_score"]}점</span></div>', unsafe_allow_html=True)
 
 # 로비 화면
 if st.session_state['active_chat_game'] is None:
@@ -297,13 +304,13 @@ if st.session_state['active_chat_game'] is None:
 
     with l_col1:
         st.markdown("""
-        <div class="file-card">
-            <div class="file-icon">🕵️‍♂️</div>
-            <div class="file-title">마피아42: 스파이 잡기</div>
+        <div class="game-lobby-card">
+            <div class="card-icon-box">🕵️‍♂️</div>
+            <div class="card-title">마피아42: 스파이 잡기</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-        if st.button("수사 파일 열기 (입장)", key="lobby_mafia_btn", use_container_width=True):
+        if st.button("🔴 마피아42 게임 입장하기", key="lobby_mafia_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "mafia"
             st.session_state['mafia_phase'] = 'init'
             st.session_state['messenger_chats'] = []
@@ -311,26 +318,26 @@ if st.session_state['active_chat_game'] is None:
 
     with l_col2:
         st.markdown("""
-        <div class="file-card">
-            <div class="file-icon">🎤</div>
-            <div class="file-title">뉴스 키워드 쿵쿵따 쇼</div>
+        <div class="game-lobby-card">
+            <div class="card-icon-box">🎤</div>
+            <div class="card-title">뉴스 키워드 쿵쿵따 쇼</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-        if st.button("퀴즈 스튜디오 입장", key="lobby_kung_btn", use_container_width=True):
+        if st.button("🔵 쿵쿵따 쇼 입장하기", key="lobby_kung_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "kungkungta"
             random_first_words = ["인공지능", "경제성장", "기후변화", "우주탐사", "디지털혁신", "글로벌무역", "스마트폰"]
             chosen_word = random.choice(random_first_words)
             st.session_state['kung_current_word'] = chosen_word
             st.session_state['kung_history'] = [
-                {"role": "ai", "text": f"수사관님 환영합니다. 첫 제시어는 **'{chosen_word}'**입니다. 단어를 이어주세요."}
+                {"role": "ai", "text": f"반가워! 쿵쿵따 쇼에 입장했어. 첫 제시어는 **'{chosen_word}'**이야! 이어줘!"}
             ]
             st.rerun()
 
 else:
     top_nav1, top_nav2 = st.columns([4, 1])
     with top_nav2:
-        if st.button("← 로비로 돌아가기", use_container_width=True):
+        if st.button("🏠 로비로 나가기", use_container_width=True):
             st.session_state['active_chat_game'] = None
             st.session_state['mafia_phase'] = 'init'
             st.rerun()
@@ -340,22 +347,22 @@ else:
     # [마피아 게임 모드]
     if st.session_state['active_chat_game'] == "mafia":
         if st.session_state['mafia_phase'] == 'init':
-            st.markdown('<div class="file-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
-            st.markdown("### 🕵️‍♂️ [사건 파일 #42] 스파이 색출 작전")
+            st.markdown('<div class="game-lobby-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
+            st.markdown("### 🕵️‍♂️ [마피아42] 뉴스 스파이 추리 게임 가이드")
             st.markdown("""
-            <div style="color: #94a3b8; text-align: left; line-height: 1.8; margin: 20px 0; font-family: 'Noto Sans KR', sans-serif !important; font-size: 1rem;">
-                📌 <b>수사 가이드</b><br>
-                1. [수사 개시]를 누르면 실시간 뉴스 사건과 4명의 용의자가 소집됩니다.<br>
-                2. 용의자들은 왼쪽에 각자의 증언(진실 또는 조작된 가짜 뉴스)을 진술합니다.<br>
-                3. 채팅창을 통해 의견을 나누고, 가짜를 퍼뜨린 스파이를 지목해 체포하세요!
+            <div style="color: #9ca3af; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1rem;">
+                📌 <b>게임 룰 설명</b><br>
+                1. 버튼을 누르면 실시간 랜덤 뉴스 기사와 4명의 AI 용의자가 소집됩니다.<br>
+                2. AI 용의자들은 왼쪽에 각자의 증언(팩트 또는 왜곡된 가짜 뉴스)을 말합니다.<br>
+                3. 채팅창에 직접 의견을 남기거나 대화를 나눈 뒤, 가짜 뉴스를 퍼트린 스파이를 지목해 처형하세요!
             </div>
             """, unsafe_allow_html=True)
             st.markdown("---")
-            if st.button("🚨 수사 개시 (용의자 소집)", use_container_width=True):
+            if st.button("🚨 마피아 토론 시작하기", use_container_width=True):
                 if not gemini_key or not client_id:
                     st.error("❌ API Key가 설정되지 않았습니다!")
                 else:
-                    with st.spinner("📂 사건 파일 수신 및 용의자 심문 준비 중..."):
+                    with st.spinner("📲 용의자 소집 및 증언 수집 중..."):
                         random_item = fetch_random_naver_news()
                         if random_item:
                             t = random_item.get('title', '').replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
@@ -365,7 +372,7 @@ else:
                             g_data['title'] = t
                             st.session_state['mafia_game_data'] = g_data
                             
-                            chats = [{"sender": "상황실", "text": f"📌 [긴급 속보] {t}"}]
+                            chats = [{"sender": "시스템", "text": f"📌 [속보 뉴스] {t}"}]
                             for p in g_data['players']:
                                 chats.append({"sender": p['name'], "text": p['statement']})
                             st.session_state['messenger_chats'] = chats
@@ -376,11 +383,11 @@ else:
         elif st.session_state['mafia_phase'] == 'debate':
             g = st.session_state['mafia_game_data']
             
-            st.markdown(f"#### 📌 수사 대상 사건: {g['title']}")
+            st.markdown(f"#### 📌 사건 뉴스: {g['title']}")
             
             st.markdown('<div class="messenger-room">', unsafe_allow_html=True)
             for chat in st.session_state['messenger_chats']:
-                if chat['sender'] == "수사관 (나)":
+                if chat['sender'] == "태희 (나)":
                     st.markdown(f"""
                     <div class="msg-row-right">
                         <div>
@@ -389,9 +396,9 @@ else:
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-                elif chat['sender'] == "상황실":
+                elif chat['sender'] == "시스템":
                     st.markdown(f"""
-                    <div style="text-align:center; color:#60a5fa; font-size:0.9rem; margin:12px 0; font-weight:bold; font-family:'Noto Sans KR',sans-serif;">
+                    <div style="text-align:center; color:#38bdf8; font-size:0.9rem; margin:10px 0; font-weight:bold;">
                         {chat['text']}
                     </div>
                     """, unsafe_allow_html=True)
@@ -399,7 +406,7 @@ else:
                     st.markdown(f"""
                     <div class="msg-row-left">
                         <div>
-                            <div class="msg-sender">👤 용의자: {chat['sender']}</div>
+                            <div class="msg-sender">👤 {chat['sender']}</div>
                             <div class="msg-bubble-left">{chat['text']}</div>
                         </div>
                     </div>
@@ -407,19 +414,19 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
             with st.form(key="msg_form", clear_on_submit=True):
-                user_msg = st.text_input("수사관 의견 입력", placeholder="예: 3번 용의자 진술에 모순이 있습니다.")
-                msg_submit = st.form_submit_button("의견 기록 📝", use_container_width=True)
+                user_msg = st.text_input("의견이나 반박을 입력하세요", placeholder="예: 3번 말이 이상한 것 같아요!")
+                msg_submit = st.form_submit_button("메시지 보내기 📤", use_container_width=True)
 
             if msg_submit and user_msg.strip():
-                st.session_state['messenger_chats'].append({"sender": "수사관 (나)", "text": user_msg.strip()})
+                st.session_state['messenger_chats'].append({"sender": "태희 (나)", "text": user_msg.strip()})
                 st.rerun()
 
             st.markdown("---")
-            st.markdown("### ⚖️ [최종 체포] 가짜 뉴스를 유포한 스파이를 지목하세요")
-            player_names = [f"{idx+1}번 용의자: {p['name']}" for idx, p in enumerate(g['players'])]
-            selected_player = st.selectbox("체포할 용의자 선택", options=player_names)
+            st.markdown("### 🗳️ [최종 투표] 가짜 뉴스를 유포하는 스파이를 지목하세요!")
+            player_names = [f"{idx+1}번: {p['name']}" for idx, p in enumerate(g['players'])]
+            selected_player = st.selectbox("처형할 용의자 선택", options=player_names)
             
-            if st.button("🚨 스파이 체포 영장 집행", use_container_width=True):
+            if st.button("⚖️ 스파이 처형 투표 확정", use_container_width=True):
                 sel_idx = player_names.index(selected_player)
                 st.session_state['selected_vote'] = sel_idx
                 st.session_state['mafia_phase'] = 'result'
@@ -431,21 +438,21 @@ else:
             voted_player = g['players'][voted_idx]
             spy_player = g['players'][g['spy_index']]
             
-            st.markdown('<div class="file-card" style="max-width:750px; margin:0 auto; padding:35px;">', unsafe_allow_html=True)
-            st.markdown(f"### ⚖️ [수사 결과보고서]")
+            st.markdown('<div class="game-lobby-card" style="max-width:750px; margin:0 auto; padding:30px;">', unsafe_allow_html=True)
+            st.markdown(f"### ⚖️ [심판의 결과]")
             st.markdown(f"💥 **{voted_player['name']}의 최후 변론**: \"{g['defense']}\"")
             st.markdown("---")
             
             if voted_idx == g['spy_index']:
                 st.balloons()
-                st.success(f"🎉 [수사 성공] {voted_player['name']}(은)는 진짜 스파이였습니다! (+20점)")
+                st.success(f"🎉 [시민 진영 승리] {voted_player['name']}(은)는 진짜 AI 스파이였습니다! (+20점)")
                 st.session_state['total_score'] += 20
             else:
-                st.error(f"💀 [수사 실패] 무고한 시민({voted_player['name']})을 체포했습니다! 진짜 스파이는 **{spy_player['name']}**이었습니다!")
+                st.error(f"💀 [스파이 진영 승리] 억울한 시민({voted_player['name']})이 처형당했습니다! 진짜 스파이는 **{spy_player['name']}**이었습니다!")
 
-            st.info(f"💡 **팩트체크 보고서**: {g['fact_check']}")
+            st.info(f"💡 **진짜 뉴스 팩트체크**: {g['fact_check']}")
             
-            if st.button("📂 새로운 사건 파일 배당받기", use_container_width=True):
+            if st.button("🔄 다음 사건 수사하기", use_container_width=True):
                 st.session_state['mafia_phase'] = 'init'
                 st.session_state['messenger_chats'] = []
                 st.rerun()
@@ -453,7 +460,7 @@ else:
 
     # [쿵쿵따 쇼 모드]
     elif st.session_state['active_chat_game'] == "kungkungta":
-        st.markdown(f"### 🎤 쿵쿵따 스튜디오 (현재 제시어: **{st.session_state['kung_current_word']}**) 끝 글자: **'{st.session_state['kung_current_word'][-1]}'**")
+        st.markdown(f"### 🎤 쿵쿵따 쇼 대결 중! (현재 제시어: **{st.session_state['kung_current_word']}**) 구멍 글자: **'{st.session_state['kung_current_word'][-1]}'**")
         st.markdown("---")
 
         st.markdown('<div class="messenger-room" style="height:450px;">', unsafe_allow_html=True)
@@ -462,7 +469,7 @@ else:
                 st.markdown(f"""
                 <div class="msg-row-left">
                     <div>
-                        <div class="msg-sender">진행자 AI</div>
+                        <div class="msg-sender">👤 쇼호스트 AI</div>
                         <div class="msg-bubble-left">{chat['text']}</div>
                     </div>
                 </div>
@@ -471,7 +478,7 @@ else:
                 st.markdown(f"""
                 <div class="msg-row-right">
                     <div>
-                        <div class="msg-sender" style="text-align:right;">수사관 (나)</div>
+                        <div class="msg-sender" style="text-align:right;">태희 (나)</div>
                         <div class="msg-bubble-right">{chat['text']}</div>
                     </div>
                 </div>
@@ -479,8 +486,8 @@ else:
         st.markdown('</div>', unsafe_allow_html=True)
 
         with st.form(key="kung_form", clear_on_submit=True):
-            user_word = st.text_input("단어 입력", placeholder=f"'{st.session_state['kung_current_word'][-1]}'로 시작하는 단어를 입력하세요")
-            kung_submit = st.form_submit_button("단어 제출 🚀", use_container_width=True)
+            user_word = st.text_input("끝말잇기 단어 입력", placeholder=f"'{st.session_state['kung_current_word'][-1]}'로 시작하는 단어를 입력하세요!")
+            kung_submit = st.form_submit_button("단어 전송 🚀", use_container_width=True)
 
         if kung_submit:
             if not user_word.strip():
