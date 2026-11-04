@@ -17,7 +17,7 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
 
-    /* 💡 보내준 사진처럼 수사 서류와 파일들이 겹겹이 쌓인 브라운/세피아 톤의 증거 자료실 배경 적용 */
+    /* 수사 서류와 파일들이 겹겹이 쌓인 브라운/세피아 톤의 증거 자료실 배경 적용 */
     .stApp {
         background: linear-gradient(rgba(20, 10, 5, 0.75), rgba(10, 5, 2, 0.85)), 
                     url('https://image.pollinations.ai/prompt/dark%20vintage%20detective%20case%20files%20documents%20evidence%20board%20background%20sepia%20brown%20tone?width=1920&height=1080&nologo=true');
@@ -73,7 +73,7 @@ st.markdown("""
         text-shadow: 0 2px 8px rgba(0,0,0,0.9);
     }
 
-    /* 💡 배경이 은은하게 다 비치는 완전 투명 수사 카드 */
+    /* 배경이 은은하게 다 비치는 완전 투명 수사 카드 */
     .transparent-game-card {
         background: rgba(0, 0, 0, 0.35) !important;
         backdrop-filter: blur(4px);
@@ -103,7 +103,7 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    /* 빈티지 수사 파일 톤의 깔끔한 선택 버튼 */
+    /* 빈티지 수사 파일 톤의 버튼 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
         background: rgba(30, 15, 5, 0.7) !important;
         color: #fef3c7 !important;
@@ -233,7 +233,7 @@ def fetch_random_naver_news():
 def generate_mafia_game(title, desc, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
     prompt = f"""
-    당신은 뉴스 스파이 추리 게임 진행자입니다. 다음 뉴스 기사를 바탕으로 게임을 구성하세요.
+    당신은 뉴스 내용 스파이 찾기 게임 진행자입니다. 다음 뉴스 기사를 바탕으로 게임을 구성하세요.
     - 뉴스 제목: {title}
     - 뉴스 요약: {desc}
 
@@ -333,7 +333,7 @@ if st.session_state['active_chat_game'] is None:
     with l_col1:
         st.markdown("""
         <div class="transparent-game-card">
-            <div class="card-title-text">스파이 잡기</div>
+            <div class="card-title-text">뉴스 내용 스파이 찾기</div>
             <div class="card-desc-text">실시간 뉴스 증언 분석 및 가짜 뉴스 판별 추리 모드</div>
         </div>
         """, unsafe_allow_html=True)
@@ -347,7 +347,7 @@ if st.session_state['active_chat_game'] is None:
     with l_col2:
         st.markdown("""
         <div class="transparent-game-card">
-            <div class="card-title-text">뉴스 키워드 쿵쿵따 쇼</div>
+            <div class="card-title-text">뉴스 키워드 쿵쿵따</div>
             <div class="card-desc-text">AI 파트너와 진행하는 실시간 시사 끝말잇기 대결</div>
         </div>
         """, unsafe_allow_html=True)
@@ -358,7 +358,7 @@ if st.session_state['active_chat_game'] is None:
             chosen_word = random.choice(random_first_words)
             st.session_state['kung_current_word'] = chosen_word
             st.session_state['kung_history'] = [
-                {"role": "ai", "text": f"반가워! 쿵쿵따 쇼에 입장했어. 첫 제시어는 **'{chosen_word}'**이야! 이어줘!"}
+                {"role": "ai", "text": f"반가워! 뉴스 키워드 쿵쿵따에 입장했어. 첫 제시어는 **'{chosen_word}'**이야! 이어줘!"}
             ]
             st.rerun()
 
@@ -372,11 +372,11 @@ else:
 
     st.markdown("---")
 
-    # [스파이 잡기 게임 모드]
+    # [뉴스 내용 스파이 찾기 게임 모드]
     if st.session_state['active_chat_game'] == "mafia":
         if st.session_state['mafia_phase'] == 'init':
             st.markdown('<div class="transparent-game-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
-            st.markdown("### 스파이 잡기 가이드")
+            st.markdown("### 뉴스 내용 스파이 찾기 가이드")
             st.markdown("""
             <div style="color: #d1d5db; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 0.98rem;">
                 1. 버튼을 누르면 실시간 뉴스 사건과 4명의 AI 용의자가 소집됩니다.<br>
@@ -497,9 +497,9 @@ else:
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
-    # [쿵쿵따 쇼 모드]
+    # [뉴스 키워드 쿵쿵따 모드]
     elif st.session_state['active_chat_game'] == "kungkungta":
-        st.markdown(f"### 쿵쿵따 쇼 (현재 제시어: **{st.session_state['kung_current_word']}** / 끝 글자: **'{st.session_state['kung_current_word'][-1]}'**)")
+        st.markdown(f"### 뉴스 키워드 쿵쿵따 (현재 제시어: **{st.session_state['kung_current_word']}** / 끝 글자: **'{st.session_state['kung_current_word'][-1]}'**)")
         st.markdown("---")
 
         st.markdown("""
