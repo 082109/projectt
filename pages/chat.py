@@ -5,7 +5,7 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 레트로 아케이드 픽셀 폰트 스타일링
+# 1. 페이지 설정 및 네모반듯한 레트로 아케이드 폰트 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens - 레트로 아케이드",
@@ -15,14 +15,13 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* 진짜 고전 8비트 게임 느낌을 내는 둥근모꼴(DungGeunMo) 픽셀 폰트 임포트 */
-    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff');
+    /* 네모반듯하고 굵은 아케이드 타이틀 픽셀 폰트 (Galmuri11) */
+    @import url('https://cdn.jsdelivr.net/gh/oungda/galmuri/dist/galmuri.css');
 
-    /* 전체 앱에 레트로 픽셀 폰트 적용 및 게임보이/오락실 감성의 다크 배경 */
     .stApp {
         background: #09090b;
         color: #f3f4f6;
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
     }
     
     section[data-testid="stSidebar"] {
@@ -32,14 +31,14 @@ st.markdown("""
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] div, 
     section[data-testid="stSidebar"] a {
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
         color: #e4e4e7 !important;
-        font-size: 1.1rem !important;
+        font-size: 1.05rem !important;
     }
 
-    /* 게임 타이틀 (픽셀 네온 스타일) */
+    /* 상단 메인 타이틀 */
     .game-main-title {
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
         font-size: 3.5rem;
         font-weight: 900;
         color: #facc15;
@@ -50,20 +49,20 @@ st.markdown("""
         text-shadow: 3px 3px 0px #b45309, 0 0 15px rgba(250, 204, 21, 0.5);
     }
     .game-main-subtitle {
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
         color: #a1a1aa;
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         text-align: center;
         margin-bottom: 35px;
         letter-spacing: 1px;
     }
 
-    /* 레트로 오락실 캐비닛 스타일 카드 박스 */
+    /* 오락실 캐비닛 스타일 카드 박스 */
     .transparent-game-card {
         background: #18181b !important;
         border: 3px solid #52525b;
-        border-radius: 0px; /* 픽셀 게임 느낌의 각진 모서리 */
-        padding: 40px 20px;
+        border-radius: 0px;
+        padding: 45px 20px;
         text-align: center;
         box-shadow: 5px 5px 0px #000000;
         transition: all 0.2s ease;
@@ -73,13 +72,18 @@ st.markdown("""
         box-shadow: 5px 5px 0px #713f12;
         transform: translate(-2px, -2px);
     }
+    
+    /* 💡 요청하신 두번째 사진 표지처럼 네모반듯하고 굵은 픽셀 게임 타이틀 폰트 적용 */
     .card-title-text {
-        font-family: 'DungGeunMo', monospace !important;
-        font-size: 2.2rem;
-        font-weight: 700;
+        font-family: 'Galmuri11', monospace !important;
+        font-size: 2rem;
+        font-weight: 900 !important;
         color: #ffffff;
         margin: 0;
         word-break: keep-all;
+        line-height: 1.5;
+        letter-spacing: -1px;
+        text-shadow: 2px 2px 0px #000000;
     }
 
     /* 인게임 뉴스 브리핑 박스 */
@@ -93,23 +97,23 @@ st.markdown("""
         box-shadow: 4px 4px 0px #000000;
     }
     .news-reader-header {
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
         color: #f59e0b;
         font-size: 1rem;
         font-weight: 700;
         margin-bottom: 8px;
     }
     .news-reader-title {
-        font-family: 'DungGeunMo', monospace !important;
-        font-size: 1.4rem;
+        font-family: 'Galmuri11', monospace !important;
+        font-size: 1.3rem;
         font-weight: 700;
         color: #ffffff;
         margin-bottom: 12px;
         line-height: 1.4;
     }
     .news-reader-body {
-        font-family: 'DungGeunMo', monospace !important;
-        font-size: 1.1rem;
+        font-family: 'Galmuri11', monospace !important;
+        font-size: 1.05rem;
         color: #e4e4e7;
         line-height: 1.6;
         background: #09090b;
@@ -119,7 +123,7 @@ st.markdown("""
 
     /* 레트로 아케이드 버튼 스타일 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
         background: #ca8a04 !important;
         color: #ffffff !important;
         border: 2px solid #fef08a !important;
@@ -148,9 +152,9 @@ st.markdown("""
         margin: 0 auto;
     }
     .messenger-top-title {
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
         color: #facc15;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         font-weight: 700;
         text-align: center;
         letter-spacing: 2px;
@@ -171,35 +175,34 @@ st.markdown("""
     .msg-row-right { display: flex; justify-content: flex-end; margin-bottom: 16px; }
     
     .msg-bubble-left {
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
         background-color: #27272a;
         color: #f4f4f5;
         padding: 10px 16px;
         border: 1px solid #52525b;
         border-radius: 0px;
         max-width: 75%;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
     }
     .msg-bubble-right {
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
         background-color: #ca8a04;
         color: #ffffff;
         padding: 10px 16px;
         border: 1px solid #fef08a;
         border-radius: 0px;
         max-width: 75%;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
     }
     .msg-sender { 
-        font-family: 'DungGeunMo', monospace !important;
-        font-size: 0.9rem; 
+        font-family: 'Galmuri11', monospace !important;
+        font-size: 0.85rem; 
         color: #a1a1aa; 
         margin-bottom: 4px; 
     }
 
-    /* 모든 기본 텍스트에 픽셀 폰트 강제 적용 */
     h1, h2, h3, h4, label, p, span, div {
-        font-family: 'DungGeunMo', monospace !important;
+        font-family: 'Galmuri11', monospace !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -353,7 +356,7 @@ if st.session_state['active_chat_game'] is None:
     with l_col1:
         st.markdown("""
         <div class="transparent-game-card">
-            <div class="card-title-text">뉴스 내용 스파이 찾기</div>
+            <div class="card-title-text">뉴스 내용<br>스파이 찾기</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 14px;"></div>', unsafe_allow_html=True)
@@ -366,7 +369,7 @@ if st.session_state['active_chat_game'] is None:
     with l_col2:
         st.markdown("""
         <div class="transparent-game-card">
-            <div class="card-title-text">뉴스 키워드 쿵쿵따</div>
+            <div class="card-title-text">뉴스 키워드<br>쿵쿵따</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 14px;"></div>', unsafe_allow_html=True)
@@ -395,10 +398,10 @@ else:
             st.markdown('<div class="transparent-game-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
             st.markdown("### 뉴스 내용 스파이 찾기")
             st.markdown("""
-            <div style="color: #facc15; font-size: 1.2rem; font-weight: 600; text-align: center; margin-bottom: 20px;">
+            <div style="color: #facc15; font-size: 1.15rem; font-weight: 600; text-align: center; margin-bottom: 20px;">
                 실시간 뉴스 증언 분석 및 가짜 뉴스 판별 추리 모드
             </div>
-            <div style="color: #e4e4e7; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1.1rem;">
+            <div style="color: #e4e4e7; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1.05rem;">
                 1. 버튼을 누르면 실시간 뉴스 사건과 4명의 AI 용의자가 소집됩니다.<br>
                 2. 용의자들의 증언을 메신저 대화로 확인하세요.<br>
                 3. 교묘하게 왜곡된 가짜 뉴스를 퍼트린 스파이를 찾아 지목하세요.
@@ -435,7 +438,7 @@ else:
             
             st.markdown(f"""
             <div class="in-app-news-reader">
-                <div class="news-reader-header">>> BRIEFING: 실시간 출제 뉴스</div>
+                <div class="news-reader-header">> BRIEFING: 실시간 출제 뉴스</div>
                 <div class="news-reader-title">{g['title']}</div>
                 <div class="news-reader-body">{g['desc']}</div>
             </div>
