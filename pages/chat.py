@@ -73,7 +73,7 @@ st.markdown("""
         text-shadow: 0 2px 8px rgba(0,0,0,0.9);
     }
 
-    /* 배경이 은은하게 다 비치는 완전 투명 수사 카드 */
+    /* 배경이 은은하게 다 비치는 투명 수사 카드 */
     .transparent-game-card {
         background: rgba(0, 0, 0, 0.35) !important;
         backdrop-filter: blur(4px);
@@ -103,6 +103,30 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
+    /* 💡 [핵심] 출제된 뉴스 기사 내용을 확실히 보여주는 증거 파일 박스 */
+    .evidence-news-box {
+        background: rgba(30, 15, 5, 0.9);
+        border: 2px solid #d97706;
+        border-radius: 6px;
+        padding: 22px;
+        max-width: 850px;
+        margin: 0 auto 15px auto;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8);
+    }
+    .evidence-news-title {
+        font-family: 'Noto Serif KR', serif !important;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #fef3c7;
+        margin-bottom: 10px;
+    }
+    .evidence-news-desc {
+        font-size: 1rem;
+        color: #f3f4f6;
+        line-height: 1.6;
+        margin-bottom: 12px;
+    }
+
     /* 빈티지 수사 파일 톤의 버튼 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
         background: rgba(30, 15, 5, 0.7) !important;
@@ -122,38 +146,32 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(217, 119, 6, 0.5) !important;
     }
 
-    /* 메신저 영역 (투명 빈티지 프레임) */
+    /* 메신저 영역 (숫자 카운터 제거됨) */
     .messenger-top-bar {
         background: rgba(20, 10, 5, 0.85);
         border: 1px solid rgba(253, 230, 138, 0.3);
         border-bottom: none;
-        padding: 10px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        border-radius: 4px 4px 0 0;
+        padding: 12px 20px;
         max-width: 850px;
         margin: 0 auto;
     }
     .messenger-top-title {
         color: #fef3c7;
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         letter-spacing: 2px;
         font-weight: 700;
-    }
-    .messenger-top-counter {
-        color: #d1d5db;
-        font-size: 0.9rem;
-        border-left: 1px solid rgba(255, 255, 255, 0.2);
-        padding-left: 10px;
+        text-align: center;
     }
 
     .messenger-room {
         background: rgba(10, 5, 2, 0.85);
         border: 1px solid rgba(253, 230, 138, 0.3);
+        border-radius: 0 0 4px 4px;
         padding: 25px;
         max-width: 850px;
         margin: 0 auto 20px auto;
-        height: 450px;
+        height: 400px;
         overflow-y: auto;
     }
 
@@ -314,7 +332,7 @@ def get_kung_reply(user_word, last_word, api_key):
         pass
     return {
         "status": "success",
-        "reply_text": f"좋어요! '{user_word}' 받아서, 저는 **'기후변화'**로 이어갈게요!",
+        "reply_text": f"좋아요! '{user_word}' 받아서, 저는 **'기후변화'**로 이어갈게요!",
         "next_word": "기후변화"
     }
 
@@ -354,8 +372,7 @@ if st.session_state['active_chat_game'] is None:
         st.markdown('<div style="height: 12px;"></div>', unsafe_allow_html=True)
         if st.button("쿵쿵따 쇼 시작", key="lobby_kung_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "kungkungta"
-            random_first_words = ["인공지능", "경제성장", "기후변화", "우주탐사", "디지털혁신", "글로벌무역", "스마트폰"]
-            chosen_word = random.choice(random_first_words)
+            chosen_word = random.choice(["인공지능", "경제성장", "기후변화", "우주탐사", "디지털혁신", "글로벌무역"])
             st.session_state['kung_current_word'] = chosen_word
             st.session_state['kung_history'] = [
                 {"role": "ai", "text": f"반가워! 뉴스 키워드 쿵쿵따에 입장했어. 첫 제시어는 **'{chosen_word}'**이야! 이어줘!"}
@@ -402,7 +419,7 @@ else:
                             g_data['link'] = l
                             st.session_state['mafia_game_data'] = g_data
                             
-                            chats = [{"sender": "SYSTEM", "text": f"속보: {t}"}]
+                            chats = []
                             for p in g_data['players']:
                                 chats.append({"sender": p['name'], "text": p['statement']})
                             st.session_state['messenger_chats'] = chats
@@ -413,18 +430,23 @@ else:
         elif st.session_state['mafia_phase'] == 'debate':
             g = st.session_state['mafia_game_data']
             
-            with st.expander("출제된 뉴스 기사 전문 확인하기", expanded=False):
-                st.markdown(f"### {g['title']}")
-                st.markdown(f"<p style='color: #f3f4f6; font-size: 1.05rem; line-height: 1.6;'>{g['desc']}</p>", unsafe_allow_html=True)
-                st.markdown(f"[네이버 뉴스 원문 읽기]({g['link']})")
-
-            st.markdown("""
-            <div class="messenger-top-bar">
-                <div class="messenger-top-title">CASE FILE ROOM</div>
-                <div class="messenger-top-counter">28/104</div>
+            # 💡 [핵심] 출제된 뉴스 기사 내용이 눈에 확 띄게 상단에 무조건 노출되도록 고정
+            st.markdown(f"""
+            <div class="evidence-news-box">
+                <div class="evidence-news-title">📄 [수사 대상 출제 뉴스] {g['title']}</div>
+                <div class="evidence-news-desc">{g['desc']}</div>
+                <div><a href="{g['link']}" target="_blank" style="color: #38bdf8; font-weight: bold; text-decoration: underline;">🔗 네이버 뉴스 원문 기사 전체 읽기</a></div>
             </div>
             """, unsafe_allow_html=True)
 
+            # 카운터 숫자가 완전히 제거된 깔끔한 메신저 상단 바
+            st.markdown("""
+            <div class="messenger-top-bar">
+                <div class="messenger-top-title">CASE FILE ROOM</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 메신저 채팅방 본체
             st.markdown('<div class="messenger-room">', unsafe_allow_html=True)
             for chat in st.session_state['messenger_chats']:
                 if chat['sender'] == "태희 (나)":
@@ -434,12 +456,6 @@ else:
                             <div class="msg-sender" style="text-align:right;">{chat['sender']}</div>
                             <div class="msg-bubble-right">{chat['text']}</div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                elif chat['sender'] == "SYSTEM":
-                    st.markdown(f"""
-                    <div style="text-align:center; color:#f87171; font-size:0.9rem; margin:10px 0; font-weight:bold;">
-                        {chat['text']}
                     </div>
                     """, unsafe_allow_html=True)
                 else:
@@ -505,7 +521,6 @@ else:
         st.markdown("""
         <div class="messenger-top-bar">
             <div class="messenger-top-title">QUIZ ROOM</div>
-            <div class="messenger-top-counter">12/50</div>
         </div>
         """, unsafe_allow_html=True)
 
