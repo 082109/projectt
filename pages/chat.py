@@ -79,7 +79,7 @@ st.markdown("""
         backdrop-filter: blur(4px);
         border: 1px solid rgba(253, 230, 138, 0.3);
         border-radius: 4px;
-        padding: 40px 20px;
+        padding: 50px 20px;
         text-align: center;
         transition: all 0.3s ease;
     }
@@ -89,21 +89,16 @@ st.markdown("""
         background: rgba(0, 0, 0, 0.5) !important;
     }
     .card-title-text {
-        font-size: 1.8rem;
-        font-weight: 700;
+        font-size: 2.1rem;
+        font-weight: 800;
         color: #fef3c7;
-        margin-bottom: 12px;
+        margin: 0;
+        word-break: keep-all;
         letter-spacing: 2px;
         text-shadow: 0 2px 10px rgba(0,0,0,0.9);
     }
-    .card-desc-text {
-        font-size: 0.95rem;
-        color: #d1d5db;
-        line-height: 1.6;
-        margin-bottom: 25px;
-    }
 
-    /* 💡 [핵심] 앱 안에서 직접 기사 내용을 완벽히 읽을 수 있는 인게임 뉴스 리더 박스 */
+    /* 인게임 뉴스 리더 박스 */
     .in-app-news-reader {
         background: rgba(25, 12, 4, 0.95);
         border: 2px solid #d97706;
@@ -139,7 +134,7 @@ st.markdown("""
         border-left: 3px solid #d97706;
     }
 
-    /* 빈티지 수사 파일 톤의 버튼 */
+    /* 버튼 스타일 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
         background: rgba(30, 15, 5, 0.7) !important;
         color: #fef3c7 !important;
@@ -355,7 +350,7 @@ st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
 st.markdown('<div class="game-main-title">AI STUDIO ARCADE</div>', unsafe_allow_html=True)
 st.markdown(f'<div class="game-main-subtitle">CASE FILE INVESTIGATION | SCORE: {st.session_state["total_score"]}</div>', unsafe_allow_html=True)
 
-# 로비 선택 화면 (서류 배경이 비치는 투명 카드)
+# 로비 선택 화면 (부설명 제거, 큰 제목만 노출)
 if st.session_state['active_chat_game'] is None:
     st.markdown('<div style="height: 30px;"></div>', unsafe_allow_html=True)
     l_col1, l_col2 = st.columns(2, gap="large")
@@ -364,7 +359,6 @@ if st.session_state['active_chat_game'] is None:
         st.markdown("""
         <div class="transparent-game-card">
             <div class="card-title-text">뉴스 내용 스파이 찾기</div>
-            <div class="card-desc-text">실시간 뉴스 증언 분석 및 가짜 뉴스 판별 추리 모드</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 12px;"></div>', unsafe_allow_html=True)
@@ -378,7 +372,6 @@ if st.session_state['active_chat_game'] is None:
         st.markdown("""
         <div class="transparent-game-card">
             <div class="card-title-text">뉴스 키워드 쿵쿵따</div>
-            <div class="card-desc-text">AI 파트너와 진행하는 실시간 시사 끝말잇기 대결</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 12px;"></div>', unsafe_allow_html=True)
@@ -405,8 +398,11 @@ else:
     if st.session_state['active_chat_game'] == "mafia":
         if st.session_state['mafia_phase'] == 'init':
             st.markdown('<div class="transparent-game-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
-            st.markdown("### 뉴스 내용 스파이 찾기 가이드")
+            st.markdown("### 뉴스 내용 스파이 찾기")
             st.markdown("""
+            <div style="color: #fef3c7; font-size: 1.1rem; font-weight: 600; text-align: center; margin-bottom: 20px;">
+                실시간 뉴스 증언 분석 및 가짜 뉴스 판별 추리 모드
+            </div>
             <div style="color: #d1d5db; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 0.98rem;">
                 1. 버튼을 누르면 실시간 뉴스 사건과 4명의 AI 용의자가 소집됩니다.<br>
                 2. 용의자들의 증언을 메신저 대화로 확인하세요.<br>
@@ -442,7 +438,7 @@ else:
         elif st.session_state['mafia_phase'] == 'debate':
             g = st.session_state['mafia_game_data']
             
-            # 💡 [핵심] 앱 안에서 직접 전체 내용을 읽을 수 있는 인게임 뉴스 리더 카드
+            # 인게임 뉴스 리더 카드
             st.markdown(f"""
             <div class="in-app-news-reader">
                 <div class="news-reader-header">OFFICIAL CASE FILE | 실시간 출제 뉴스 브리핑</div>
@@ -528,6 +524,11 @@ else:
     # [뉴스 키워드 쿵쿵따 모드]
     elif st.session_state['active_chat_game'] == "kungkungta":
         st.markdown(f"### 뉴스 키워드 쿵쿵따 (현재 제시어: **{st.session_state['kung_current_word']}** / 끝 글자: **'{st.session_state['kung_current_word'][-1]}'**)")
+        st.markdown("""
+        <div style="color: #fef3c7; font-size: 1rem; font-weight: 500; margin-bottom: 15px;">
+            AI 파트너와 진행하는 실시간 시사 끝말잇기 대결
+        </div>
+        """, unsafe_allow_html=True)
         st.markdown("---")
 
         st.markdown("""
