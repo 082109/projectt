@@ -350,7 +350,7 @@ st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
 st.markdown('<div class="game-main-title">AI STUDIO ARCADE</div>', unsafe_allow_html=True)
 st.markdown(f'<div class="game-main-subtitle">CASE FILE INVESTIGATION | SCORE: {st.session_state["total_score"]}</div>', unsafe_allow_html=True)
 
-# 로비 선택 화면 (부설명 제거, 큰 제목만 노출)
+# 로비 선택 화면 (큰 제목만 노출)
 if st.session_state['active_chat_game'] is None:
     st.markdown('<div style="height: 30px;"></div>', unsafe_allow_html=True)
     l_col1, l_col2 = st.columns(2, gap="large")
@@ -362,7 +362,7 @@ if st.session_state['active_chat_game'] is None:
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 12px;"></div>', unsafe_allow_html=True)
-        if st.button("스파이 추리 시작", key="lobby_mafia_btn", use_container_width=True):
+        if st.button("GAME START", key="lobby_mafia_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "mafia"
             st.session_state['mafia_phase'] = 'init'
             st.session_state['messenger_chats'] = []
@@ -375,7 +375,7 @@ if st.session_state['active_chat_game'] is None:
         </div>
         """, unsafe_allow_html=True)
         st.markdown('<div style="height: 12px;"></div>', unsafe_allow_html=True)
-        if st.button("쿵쿵따 쇼 시작", key="lobby_kung_btn", use_container_width=True):
+        if st.button("GAME START", key="lobby_kung_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "kungkungta"
             chosen_word = random.choice(["인공지능", "경제성장", "기후변화", "우주탐사", "디지털혁신", "글로벌무역"])
             st.session_state['kung_current_word'] = chosen_word
@@ -410,7 +410,7 @@ else:
             </div>
             """, unsafe_allow_html=True)
             st.markdown("---")
-            if st.button("추리 토론 시작", use_container_width=True):
+            if st.button("GAME START", use_container_width=True):
                 if not gemini_key or not client_id:
                     st.error("API Key가 설정되지 않았습니다!")
                 else:
