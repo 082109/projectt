@@ -103,28 +103,40 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    /* 💡 [핵심] 출제된 뉴스 기사 내용을 확실히 보여주는 증거 파일 박스 */
-    .evidence-news-box {
-        background: rgba(30, 15, 5, 0.9);
+    /* 💡 [핵심] 앱 안에서 직접 기사 내용을 완벽히 읽을 수 있는 인게임 뉴스 리더 박스 */
+    .in-app-news-reader {
+        background: rgba(25, 12, 4, 0.95);
         border: 2px solid #d97706;
         border-radius: 6px;
-        padding: 22px;
+        padding: 24px;
         max-width: 850px;
-        margin: 0 auto 15px auto;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8);
+        margin: 0 auto 20px auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
     }
-    .evidence-news-title {
+    .news-reader-header {
+        color: #f59e0b;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+    .news-reader-title {
         font-family: 'Noto Serif KR', serif !important;
-        font-size: 1.25rem;
+        font-size: 1.3rem;
         font-weight: 700;
         color: #fef3c7;
-        margin-bottom: 10px;
-    }
-    .evidence-news-desc {
-        font-size: 1rem;
-        color: #f3f4f6;
-        line-height: 1.6;
         margin-bottom: 12px;
+        line-height: 1.4;
+    }
+    .news-reader-body {
+        font-size: 1.02rem;
+        color: #f3f4f6;
+        line-height: 1.7;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 15px;
+        border-radius: 4px;
+        border-left: 3px solid #d97706;
     }
 
     /* 빈티지 수사 파일 톤의 버튼 */
@@ -146,7 +158,7 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(217, 119, 6, 0.5) !important;
     }
 
-    /* 메신저 영역 (숫자 카운터 제거됨) */
+    /* 메신저 영역 */
     .messenger-top-bar {
         background: rgba(20, 10, 5, 0.85);
         border: 1px solid rgba(253, 230, 138, 0.3);
@@ -171,7 +183,7 @@ st.markdown("""
         padding: 25px;
         max-width: 850px;
         margin: 0 auto 20px auto;
-        height: 400px;
+        height: 380px;
         overflow-y: auto;
     }
 
@@ -430,16 +442,16 @@ else:
         elif st.session_state['mafia_phase'] == 'debate':
             g = st.session_state['mafia_game_data']
             
-            # 💡 [핵심] 출제된 뉴스 기사 내용이 눈에 확 띄게 상단에 무조건 노출되도록 고정
+            # 💡 [핵심] 앱 안에서 직접 전체 내용을 읽을 수 있는 인게임 뉴스 리더 카드
             st.markdown(f"""
-            <div class="evidence-news-box">
-                <div class="evidence-news-title">📄 [수사 대상 출제 뉴스] {g['title']}</div>
-                <div class="evidence-news-desc">{g['desc']}</div>
-                <div><a href="{g['link']}" target="_blank" style="color: #38bdf8; font-weight: bold; text-decoration: underline;">🔗 네이버 뉴스 원문 기사 전체 읽기</a></div>
+            <div class="in-app-news-reader">
+                <div class="news-reader-header">OFFICIAL CASE FILE | 실시간 출제 뉴스 브리핑</div>
+                <div class="news-reader-title">{g['title']}</div>
+                <div class="news-reader-body">{g['desc']}</div>
             </div>
             """, unsafe_allow_html=True)
 
-            # 카운터 숫자가 완전히 제거된 깔끔한 메신저 상단 바
+            # 메신저 상단 바
             st.markdown("""
             <div class="messenger-top-bar">
                 <div class="messenger-top-title">CASE FILE ROOM</div>
