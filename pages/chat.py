@@ -5,176 +5,161 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 수사 서류 배경 스타일링
+# 1. 페이지 설정 및 레트로 아케이드 픽셀 폰트 스타일링
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="FrameLens - AI 뉴스 예능 스튜디오",
+    page_title="FrameLens - 레트로 아케이드",
     page_icon="🕹️",
     layout="wide"
 )
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+KR:wght@300;400;600;700;900&display=swap');
+    /* 진짜 고전 8비트 게임 느낌을 내는 둥근모꼴(DungGeunMo) 픽셀 폰트 임포트 */
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff');
 
-    /* 수사 서류와 파일들이 겹겹이 쌓인 브라운/세피아 톤의 증거 자료실 배경 적용 */
+    /* 전체 앱에 레트로 픽셀 폰트 적용 및 게임보이/오락실 감성의 다크 배경 */
     .stApp {
-        background: linear-gradient(rgba(20, 10, 5, 0.75), rgba(10, 5, 2, 0.85)), 
-                    url('https://image.pollinations.ai/prompt/dark%20vintage%20detective%20case%20files%20documents%20evidence%20board%20background%20sepia%20brown%20tone?width=1920&height=1080&nologo=true');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+        background: #09090b;
         color: #f3f4f6;
-        font-family: 'Noto Serif KR', serif !important;
+        font-family: 'DungGeunMo', monospace !important;
     }
     
     section[data-testid="stSidebar"] {
-        background-color: rgba(15, 8, 4, 0.95) !important;
-        border-right: 1px solid rgba(217, 119, 6, 0.3) !important;
+        background-color: #121216 !important;
+        border-right: 2px solid #3f3f46 !important;
     }
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] div, 
     section[data-testid="stSidebar"] a {
-        color: #fef3c7 !important;
-        font-size: 1.05rem !important;
-        font-weight: 600 !important;
-    }
-    [data-testid="stSidebarNav"] a {
-        color: #fef3c7 !important;
-        background-color: rgba(40, 20, 10, 0.8) !important;
-        border-radius: 4px !important;
-        margin-bottom: 6px !important;
-        padding: 10px 14px !important;
-    }
-    [data-testid="stSidebarNav"] a[aria-current="page"] {
-        background: rgba(217, 119, 6, 0.3) !important;
-        color: #ffffff !important;
-        border: 1px solid #d97706 !important;
+        font-family: 'DungGeunMo', monospace !important;
+        color: #e4e4e7 !important;
+        font-size: 1.1rem !important;
     }
 
-    /* 게임 메인 타이틀 */
+    /* 게임 타이틀 (픽셀 네온 스타일) */
     .game-main-title {
-        font-family: 'Cinzel', 'Noto Serif KR', serif !important;
+        font-family: 'DungGeunMo', monospace !important;
         font-size: 3.5rem;
         font-weight: 900;
-        color: #fef3c7;
+        color: #facc15;
         text-align: center;
         margin-top: 15px;
         margin-bottom: 5px;
-        letter-spacing: 4px;
-        text-shadow: 0 0 15px rgba(217, 119, 6, 0.5), 0 0 30px rgba(0, 0, 0, 0.9);
+        letter-spacing: 2px;
+        text-shadow: 3px 3px 0px #b45309, 0 0 15px rgba(250, 204, 21, 0.5);
     }
     .game-main-subtitle {
-        color: #d1d5db;
-        font-size: 1.1rem;
+        font-family: 'DungGeunMo', monospace !important;
+        color: #a1a1aa;
+        font-size: 1.2rem;
         text-align: center;
-        margin-bottom: 40px;
-        letter-spacing: 2px;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+        margin-bottom: 35px;
+        letter-spacing: 1px;
     }
 
-    /* 배경이 은은하게 다 비치는 투명 수사 카드 */
+    /* 레트로 오락실 캐비닛 스타일 카드 박스 */
     .transparent-game-card {
-        background: rgba(0, 0, 0, 0.35) !important;
-        backdrop-filter: blur(4px);
-        border: 1px solid rgba(253, 230, 138, 0.3);
-        border-radius: 4px;
-        padding: 50px 20px;
+        background: #18181b !important;
+        border: 3px solid #52525b;
+        border-radius: 0px; /* 픽셀 게임 느낌의 각진 모서리 */
+        padding: 40px 20px;
         text-align: center;
-        transition: all 0.3s ease;
+        box-shadow: 5px 5px 0px #000000;
+        transition: all 0.2s ease;
     }
     .transparent-game-card:hover {
-        border-color: rgba(253, 230, 138, 0.9);
-        box-shadow: 0 0 25px rgba(217, 119, 6, 0.3);
-        background: rgba(0, 0, 0, 0.5) !important;
+        border-color: #facc15;
+        box-shadow: 5px 5px 0px #713f12;
+        transform: translate(-2px, -2px);
     }
     .card-title-text {
-        font-size: 2.1rem;
-        font-weight: 800;
-        color: #fef3c7;
+        font-family: 'DungGeunMo', monospace !important;
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #ffffff;
         margin: 0;
         word-break: keep-all;
-        letter-spacing: 2px;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.9);
     }
 
-    /* 인게임 뉴스 리더 박스 */
+    /* 인게임 뉴스 브리핑 박스 */
     .in-app-news-reader {
-        background: rgba(25, 12, 4, 0.95);
-        border: 2px solid #d97706;
-        border-radius: 6px;
+        background: #18181b;
+        border: 3px solid #f59e0b;
+        border-radius: 0px;
         padding: 24px;
         max-width: 850px;
         margin: 0 auto 20px auto;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+        box-shadow: 4px 4px 0px #000000;
     }
     .news-reader-header {
+        font-family: 'DungGeunMo', monospace !important;
         color: #f59e0b;
-        font-size: 0.85rem;
+        font-size: 1rem;
         font-weight: 700;
-        letter-spacing: 2px;
         margin-bottom: 8px;
-        text-transform: uppercase;
     }
     .news-reader-title {
-        font-family: 'Noto Serif KR', serif !important;
-        font-size: 1.3rem;
+        font-family: 'DungGeunMo', monospace !important;
+        font-size: 1.4rem;
         font-weight: 700;
-        color: #fef3c7;
+        color: #ffffff;
         margin-bottom: 12px;
         line-height: 1.4;
     }
     .news-reader-body {
-        font-size: 1.02rem;
-        color: #f3f4f6;
-        line-height: 1.7;
-        background: rgba(0, 0, 0, 0.4);
+        font-family: 'DungGeunMo', monospace !important;
+        font-size: 1.1rem;
+        color: #e4e4e7;
+        line-height: 1.6;
+        background: #09090b;
         padding: 15px;
-        border-radius: 4px;
-        border-left: 3px solid #d97706;
+        border-left: 4px solid #f59e0b;
     }
 
-    /* 버튼 스타일 */
+    /* 레트로 아케이드 버튼 스타일 */
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
-        background: rgba(30, 15, 5, 0.7) !important;
-        color: #fef3c7 !important;
-        border: 1px solid rgba(253, 230, 138, 0.4) !important;
-        border-radius: 2px !important;
-        font-weight: 600 !important;
-        font-size: 1.05rem !important;
-        height: 50px !important;
-        transition: all 0.25s ease !important;
+        font-family: 'DungGeunMo', monospace !important;
+        background: #ca8a04 !important;
+        color: #ffffff !important;
+        border: 2px solid #fef08a !important;
+        border-radius: 0px !important;
+        font-weight: 700 !important;
+        font-size: 1.2rem !important;
+        height: 52px !important;
+        box-shadow: 3px 3px 0px #000000 !important;
+        transition: all 0.1s ease !important;
         letter-spacing: 1px !important;
         width: 100% !important;
     }
     .stButton > button:hover {
-        background: rgba(180, 83, 9, 0.6) !important;
-        border-color: #fef3c7 !important;
-        box-shadow: 0 0 15px rgba(217, 119, 6, 0.5) !important;
+        background: #eab308 !important;
+        transform: translate(-1px, -1px);
+        box-shadow: 4px 4px 0px #000000 !important;
     }
 
-    /* 메신저 영역 */
+    /* 메신저 영역 (아케이드 채팅 박스) */
     .messenger-top-bar {
-        background: rgba(20, 10, 5, 0.85);
-        border: 1px solid rgba(253, 230, 138, 0.3);
+        background: #27272a;
+        border: 2px solid #52525b;
         border-bottom: none;
-        border-radius: 4px 4px 0 0;
         padding: 12px 20px;
         max-width: 850px;
         margin: 0 auto;
     }
     .messenger-top-title {
-        color: #fef3c7;
-        font-size: 1.1rem;
-        letter-spacing: 2px;
+        font-family: 'DungGeunMo', monospace !important;
+        color: #facc15;
+        font-size: 1.2rem;
         font-weight: 700;
         text-align: center;
+        letter-spacing: 2px;
     }
 
     .messenger-room {
-        background: rgba(10, 5, 2, 0.85);
-        border: 1px solid rgba(253, 230, 138, 0.3);
-        border-radius: 0 0 4px 4px;
+        background: #18181b;
+        border: 2px solid #52525b;
+        border-top: none;
         padding: 25px;
         max-width: 850px;
         margin: 0 auto 20px auto;
@@ -186,26 +171,36 @@ st.markdown("""
     .msg-row-right { display: flex; justify-content: flex-end; margin-bottom: 16px; }
     
     .msg-bubble-left {
-        background-color: rgba(254, 243, 199, 0.9);
-        color: #1c1917;
+        font-family: 'DungGeunMo', monospace !important;
+        background-color: #27272a;
+        color: #f4f4f5;
         padding: 10px 16px;
-        border-radius: 2px;
+        border: 1px solid #52525b;
+        border-radius: 0px;
         max-width: 75%;
-        font-size: 1rem;
-        font-weight: 500;
+        font-size: 1.1rem;
     }
     .msg-bubble-right {
-        background-color: rgba(254, 243, 199, 0.9);
-        color: #1c1917;
+        font-family: 'DungGeunMo', monospace !important;
+        background-color: #ca8a04;
+        color: #ffffff;
         padding: 10px 16px;
-        border-radius: 2px;
+        border: 1px solid #fef08a;
+        border-radius: 0px;
         max-width: 75%;
-        font-size: 1rem;
-        font-weight: 500;
+        font-size: 1.1rem;
     }
-    .msg-sender { font-size: 0.8rem; color: #d1d5db; margin-bottom: 4px; }
+    .msg-sender { 
+        font-family: 'DungGeunMo', monospace !important;
+        font-size: 0.9rem; 
+        color: #a1a1aa; 
+        margin-bottom: 4px; 
+    }
 
-    h1, h2, h3, h4, label { font-family: 'Noto Serif KR', serif !important; }
+    /* 모든 기본 텍스트에 픽셀 폰트 강제 적용 */
+    h1, h2, h3, h4, label, p, span, div {
+        font-family: 'DungGeunMo', monospace !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -347,10 +342,10 @@ def get_kung_reply(user_word, last_word, api_key):
 # 3. 메인 화면 UI 구성
 # ---------------------------------------------------------
 st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
-st.markdown('<div class="game-main-title">AI STUDIO ARCADE</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="game-main-subtitle">CASE FILE INVESTIGATION | SCORE: {st.session_state["total_score"]}</div>', unsafe_allow_html=True)
+st.markdown('<div class="game-main-title">RETRO ARCADE</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="game-main-subtitle">INSERT COIN | SCORE: {st.session_state["total_score"]}</div>', unsafe_allow_html=True)
 
-# 로비 선택 화면 (큰 제목만 노출)
+# 로비 선택 화면
 if st.session_state['active_chat_game'] is None:
     st.markdown('<div style="height: 30px;"></div>', unsafe_allow_html=True)
     l_col1, l_col2 = st.columns(2, gap="large")
@@ -361,7 +356,7 @@ if st.session_state['active_chat_game'] is None:
             <div class="card-title-text">뉴스 내용 스파이 찾기</div>
         </div>
         """, unsafe_allow_html=True)
-        st.markdown('<div style="height: 12px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div style="height: 14px;"></div>', unsafe_allow_html=True)
         if st.button("GAME START", key="lobby_mafia_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "mafia"
             st.session_state['mafia_phase'] = 'init'
@@ -374,7 +369,7 @@ if st.session_state['active_chat_game'] is None:
             <div class="card-title-text">뉴스 키워드 쿵쿵따</div>
         </div>
         """, unsafe_allow_html=True)
-        st.markdown('<div style="height: 12px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div style="height: 14px;"></div>', unsafe_allow_html=True)
         if st.button("GAME START", key="lobby_kung_btn", use_container_width=True):
             st.session_state['active_chat_game'] = "kungkungta"
             chosen_word = random.choice(["인공지능", "경제성장", "기후변화", "우주탐사", "디지털혁신", "글로벌무역"])
@@ -400,10 +395,10 @@ else:
             st.markdown('<div class="transparent-game-card" style="max-width:700px; margin:0 auto; padding:40px;">', unsafe_allow_html=True)
             st.markdown("### 뉴스 내용 스파이 찾기")
             st.markdown("""
-            <div style="color: #fef3c7; font-size: 1.1rem; font-weight: 600; text-align: center; margin-bottom: 20px;">
+            <div style="color: #facc15; font-size: 1.2rem; font-weight: 600; text-align: center; margin-bottom: 20px;">
                 실시간 뉴스 증언 분석 및 가짜 뉴스 판별 추리 모드
             </div>
-            <div style="color: #d1d5db; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 0.98rem;">
+            <div style="color: #e4e4e7; text-align: left; line-height: 1.8; margin: 20px 0; font-size: 1.1rem;">
                 1. 버튼을 누르면 실시간 뉴스 사건과 4명의 AI 용의자가 소집됩니다.<br>
                 2. 용의자들의 증언을 메신저 대화로 확인하세요.<br>
                 3. 교묘하게 왜곡된 가짜 뉴스를 퍼트린 스파이를 찾아 지목하세요.
@@ -438,23 +433,20 @@ else:
         elif st.session_state['mafia_phase'] == 'debate':
             g = st.session_state['mafia_game_data']
             
-            # 인게임 뉴스 리더 카드
             st.markdown(f"""
             <div class="in-app-news-reader">
-                <div class="news-reader-header">OFFICIAL CASE FILE | 실시간 출제 뉴스 브리핑</div>
+                <div class="news-reader-header">>> BRIEFING: 실시간 출제 뉴스</div>
                 <div class="news-reader-title">{g['title']}</div>
                 <div class="news-reader-body">{g['desc']}</div>
             </div>
             """, unsafe_allow_html=True)
 
-            # 메신저 상단 바
             st.markdown("""
             <div class="messenger-top-bar">
-                <div class="messenger-top-title">CASE FILE ROOM</div>
+                <div class="messenger-top-title">CHATTING ROOM</div>
             </div>
             """, unsafe_allow_html=True)
 
-            # 메신저 채팅방 본체
             st.markdown('<div class="messenger-room">', unsafe_allow_html=True)
             for chat in st.session_state['messenger_chats']:
                 if chat['sender'] == "태희 (나)":
@@ -525,7 +517,7 @@ else:
     elif st.session_state['active_chat_game'] == "kungkungta":
         st.markdown(f"### 뉴스 키워드 쿵쿵따 (현재 제시어: **{st.session_state['kung_current_word']}** / 끝 글자: **'{st.session_state['kung_current_word'][-1]}'**)")
         st.markdown("""
-        <div style="color: #fef3c7; font-size: 1rem; font-weight: 500; margin-bottom: 15px;">
+        <div style="color: #facc15; font-size: 1.1rem; font-weight: 500; margin-bottom: 15px;">
             AI 파트너와 진행하는 실시간 시사 끝말잇기 대결
         </div>
         """, unsafe_allow_html=True)
