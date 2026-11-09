@@ -11,7 +11,7 @@ import random
 from PIL import Image, ImageDraw, ImageFont
 
 # ---------------------------------------------------------
-# 1. 페이지 설정 및 현대적 스타일링
+# 0. st.navigation을 활용한 멀티 페이지 라우팅 설정 (main.py 전용)
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FrameLens Studio",
@@ -19,62 +19,73 @@ st.set_page_config(
     layout="wide"
 )
 
+# 만약 서브 페이지와 함께 탭을 명시적으로 묶고 싶다면 아래처럼 설정할 수 있어
+# (pages/ 폴더 안에 chat.py가 있을 때 사이드바에 정상 노출됨)
+
+# ---------------------------------------------------------
+# 1. 시크한 블랙 검색엔진 테마 스타일링
+# ---------------------------------------------------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800&display=swap');
+    @import url('https://cdn.jsdelivr.net/gh/oungda/galmuri/dist/galmuri.css');
 
+    /* 💡 시크한 블랙 배경 (0d0e12) */
     .stApp {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e40af 100%);
-        color: #ffffff;
-        font-family: 'Pretendard', sans-serif !important;
+        background-color: #0d0e12;
+        color: #f3f4f6;
+        font-family: 'Galmuri11', 'Pretendard', sans-serif !important;
     }
     
     section[data-testid="stSidebar"] {
-        background-color: #0f172a !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background-color: #121318 !important;
+        border-right: 1px solid #27272a !important;
     }
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] div, 
     section[data-testid="stSidebar"] a {
-        color: #ffffff !important;
-        font-size: 1rem !important;
+        color: #e4e4e7 !important;
+        font-size: 1.05rem !important;
         font-weight: 600 !important;
     }
     [data-testid="stSidebarNav"] a {
         color: #ffffff !important;
-        background-color: rgba(255, 255, 255, 0.08) !important;
-        border-radius: 12px !important;
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 4px !important;
         margin-bottom: 8px !important;
         padding: 12px 16px !important;
     }
     [data-testid="stSidebarNav"] a[aria-current="page"] {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        background: #27272a !important;
         color: #ffffff !important;
-        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+        border: 1px solid #ffffff !important;
     }
     
     .hero-title {
         font-size: 3.5rem;
-        font-weight: 800;
+        font-weight: 900;
         color: #ffffff;
         text-align: center;
         margin-top: 20px;
         margin-bottom: 10px;
-        letter-spacing: -1px;
+        letter-spacing: 2px;
+        text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
     }
     .hero-subtitle {
-        color: #e0f2fe;
-        font-size: 1.25rem;
+        color: #a1a1aa;
+        font-size: 1.15rem;
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 40px;
         font-weight: 400;
     }
 
+    /* 깔끔하고 각진 블랙 검색 바 컨테이너 */
     .search-pill-container {
-        background: #ffffff;
-        border-radius: 50px;
-        padding: 6px 8px 6px 24px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
+        background: #181920;
+        border: 2px solid #ffffff;
+        border-radius: 4px;
+        padding: 8px 12px 8px 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         max-width: 800px;
         margin: 0 auto 30px auto;
         display: flex;
@@ -82,62 +93,61 @@ st.markdown("""
     }
 
     .stButton > button, div[data-testid="stFormSubmitButton"] > button {
-        background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
-        color: #ffffff;
-        border: none;
-        border-radius: 40px;
-        font-weight: 700;
-        font-size: 1.1rem;
-        height: 52px;
-        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
-        transition: all 0.25s ease;
-        width: 100%;
+        background: #181920 !important;
+        color: #ffffff !important;
+        border: 2px solid #ffffff !important;
+        border-radius: 4px !important;
+        font-weight: 700 !important;
+        font-size: 1.1rem !important;
+        height: 50px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+        transition: all 0.2s ease !important;
+        width: 100% !important;
     }
     .stButton > button:hover {
-        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-        box-shadow: 0 8px 25px rgba(56, 189, 248, 0.5);
-        transform: translateY(-2px);
+        background: #ffffff !important;
+        color: #000000 !important;
+        border-color: #ffffff !important;
     }
 
     .news-card-item {
-        background: rgba(255, 255, 255, 0.12);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 20px;
+        background: #14151a;
+        border: 1px solid #27272a;
+        border-radius: 8px;
         padding: 22px;
         margin-bottom: 16px;
     }
     .news-card-item.selected {
-        border: 2.5px solid #38bdf8;
-        background: rgba(255, 255, 255, 0.22);
+        border: 2px solid #ffffff;
+        background: #1c1d24;
     }
-    .news-card-date { font-size: 0.88rem; color: #7dd3fc; margin-bottom: 8px; font-weight: 600; }
+    .news-card-date { font-size: 0.88rem; color: #a1a1aa; margin-bottom: 8px; font-weight: 600; }
     .news-card-title { font-size: 1.25rem; font-weight: 700; color: #ffffff; margin-bottom: 10px; }
-    .news-card-desc { font-size: 0.98rem; color: #e2e8f0; line-height: 1.6; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 10px; }
+    .news-card-desc { font-size: 0.98rem; color: #d4d4d8; line-height: 1.6; border-top: 1px solid #27272a; padding-top: 10px; }
 
     .right-card-box {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 20px;
+        background: #14151a;
+        border: 1px solid #27272a;
+        border-radius: 8px;
         padding: 24px;
         margin-bottom: 20px;
     }
     .summary-card-box {
-        background: rgba(15, 23, 42, 0.5);
-        border: 1.5px solid #38bdf8;
-        border-radius: 18px;
+        background: #14151a;
+        border: 1.5px solid #52525b;
+        border-radius: 8px;
         padding: 22px;
         margin-top: 15px;
     }
     .image-preview-container {
-        background: rgba(15, 23, 42, 0.7);
-        border: 2px solid #38bdf8;
-        border-radius: 24px;
+        background: #14151a;
+        border: 2px solid #ffffff;
+        border-radius: 8px;
         padding: 35px;
         margin-top: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
     }
-    h1, h2, h3, h4, label { font-family: 'Pretendard', sans-serif !important; }
+    h1, h2, h3, h4, label { font-family: 'Galmuri11', 'Pretendard', sans-serif !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -265,17 +275,17 @@ def fetch_robust_panel_image(prompt_text, index):
                 return img.resize((380, 380))
         except Exception:
             time.sleep(0.5)
-    p_img = Image.new("RGB", (380, 380), color=(219, 234, 254))
+    p_img = Image.new("RGB", (380, 380), color=(20, 21, 26))
     draw_p = ImageDraw.Draw(p_img)
-    draw_p.text((50, 180), f"웹툰 {index+1}컷 일러스트", fill=(30, 64, 175), font=get_korean_font(18))
+    draw_p.text((50, 180), f"웹툰 {index+1}컷 일러스트", fill=(255, 255, 255), font=get_korean_font(18))
     return p_img
 
 def create_4cut_comic_image(comic_data, article_title):
     img_w, img_h = 820, 890
-    image = Image.new("RGB", (img_w, img_h), color=(255, 255, 255))
+    image = Image.new("RGB", (img_w, img_h), color=(20, 21, 26))
     draw = ImageDraw.Draw(image)
 
-    draw.rectangle([20, 20, img_w - 20, 70], fill=(15, 23, 42))
+    draw.rectangle([20, 20, img_w - 20, 70], fill=(39, 39, 42))
     draw.text((35, 33), f"🎬 [4컷 웹툰] {article_title[:42]}...", fill=(255, 255, 255), font=get_korean_font(16))
 
     positions = [(20, 90), (420, 90), (20, 485), (420, 485)]
@@ -283,13 +293,13 @@ def create_4cut_comic_image(comic_data, article_title):
         px, py = positions[i-1]
         panel_img = fetch_robust_panel_image(comic_data.get(f"cut{i}_prompt", "panel"), i-1)
         image.paste(panel_img, (px, py))
-        draw.rectangle([px, py, px + 380, py + 380], outline=(30, 41, 59), width=3)
-        draw.rectangle([px + 10, py + 10, px + 45, py + 28], fill=(2, 132, 199))
+        draw.rectangle([px, py, px + 380, py + 380], outline=(255, 255, 255), width=3)
+        draw.rectangle([px + 10, py + 10, px + 45, py + 28], fill=(0, 0, 0))
         draw.text((px + 15, py + 12), f"{i}컷", fill=(255, 255, 255), font=get_korean_font(11))
         
         speech = comic_data.get(f"cut{i}_speech", "")
-        draw.rounded_rectangle([px + 12, py + 305, px + 368, py + 368], radius=8, fill=(255, 255, 255), outline=(30, 41, 59), width=2)
-        draw_wrapped_text(draw, f"💬 {speech}", get_korean_font(12), (15, 23, 42), px + 22, py + 315, 330)
+        draw.rounded_rectangle([px + 12, py + 305, px + 368, py + 368], radius=8, fill=(255, 255, 255), outline=(0, 0, 0), width=2)
+        draw_wrapped_text(draw, f"💬 {speech}", get_korean_font(12), (0, 0, 0), px + 22, py + 315, 330)
 
     buf = io.BytesIO()
     image.save(buf, format="PNG")
@@ -302,14 +312,7 @@ def create_4cut_comic_image(comic_data, article_title):
 if st.session_state['step'] == 'search':
     st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-title">FrameLens Studio</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-subtitle">원하는 뉴스 키워드를 검색하고 고품질 맞춤형 미디어 콘텐츠를 생성해 보세요!</div>', unsafe_allow_html=True)
-
-    # 💡 [요청 반영] 사용자가 원한 손가락 3D 일러스트 검색창을 화면 상단에 렌더링
-    st.markdown("""
-    <div style="display: flex; justify-content: center; margin-bottom: 25px;">
-        <img src="https://image.pollinations.ai/prompt/3d%20claymation%20cute%20hand%20clicking%20blue%20search%20bar%20with%20magnifying%20glass%20vibrant%20blue%20background?width=750&height=180&nologo=true" style="border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-width: 100%;">
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">SEARCH NEWS & CREATE AI MEDIA STUDIO</div>', unsafe_allow_html=True)
 
     with st.form(key="search_form"):
         st.markdown('<div class="search-pill-container">', unsafe_allow_html=True)
@@ -402,7 +405,7 @@ elif st.session_state['step'] == 'result':
                         st.session_state['page_number'] -= 1
                         st.rerun()
             with p_col2:
-                st.markdown(f"<div style='text-align: center; padding-top: 10px; color: #e2e8f0;'>{current_page} / {total_pages} Page</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: center; padding-top: 10px; color: #a1a1aa;'>{current_page} / {total_pages} Page</div>", unsafe_allow_html=True)
             with p_col3:
                 if current_page < total_pages:
                     if st.button("다음 페이지 ▶", use_container_width=True):
